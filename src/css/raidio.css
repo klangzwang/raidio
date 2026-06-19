@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+	.text-balance {
+		text-wrap: balance;
+	}
+}
+
+@layer base {
+	:root {
+		--font-sans: var(--font-geist-sans);
+		--font-mono: var(--font-geist-mono);
+		--background: 0 0% 3.9%;
+		--foreground: 0 0% 98%;
+		--card: 0 0% 3.9%;
+		--card-foreground: 0 0% 98%;
+		--popover: 0 0% 3.9%;
+		--popover-foreground: 0 0% 98%;
+		--primary: 0 0% 98%;
+		--primary-foreground: 0 0% 9%;
+		--secondary: 0 0% 14.9%;
+		--secondary-foreground: 0 0% 98%;
+		--muted: 0 0% 14.9%;
+		--muted-foreground: 0 0% 63.9%;
+		--accent: 0 0% 14.9%;
+		--accent-foreground: 0 0% 98%;
+		--destructive: 0 62.8% 30.6%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 0 0% 14.9%;
+		--input: 0 0% 14.9%;
+		--ring: 0 0% 83.1%;
+		--chart-1: 220 70% 50%;
+		--chart-2: 160 60% 45%;
+		--chart-3: 30 80% 55%;
+		--chart-4: 280 65% 60%;
+		--chart-5: 340 75% 55%;
+		--radius: 0.5rem;
+		--sidebar-background: 240 5.9% 10%;
+		--sidebar-foreground: 240 4.8% 95.9%;
+		--sidebar-primary: 224.3 76.3% 48%;
+		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-accent: 240 3.7% 15.9%;
+		--sidebar-accent-foreground: 240 4.8% 95.9%;
+		--sidebar-border: 240 3.7% 15.9%;
+		--sidebar-ring: 217.2 91.2% 59.8%;
+		--color-text-lightgray: #a4a5aa;
+		--color-text-lightbrown: #f9eedf;
+		--color-text-cyan: #3f92ac;
+		--color-text-yellow: #f8b818;
+		--color-text-blue: #090c19;
+		--color-raider-blue: #3eccff;
+		--color-raider-green: #3ce466;
+		--color-raider-yellow: #f1aa1c;
+		--color-raider-red: #ff0021;
+		--color-raider-icon-blue: #3894a7;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+	}
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+	width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	background-color: #181b28;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background-color: #313443;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+.bg-layer {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.bg-layer-cells {
+	overflow: hidden;
+	margin: "8px, 8px, 8px, 8px";
+	background-image:
+		repeating-linear-gradient(0deg,
+			transparent,
+			transparent 120px,
+			rgba(222, 222, 222, 0.25) 122px,
+			transparent 124px),
+		repeating-linear-gradient(90deg,
+			transparent,
+			transparent 120px,
+			rgba(222, 222, 222, 0.25) 122px,
+			transparent 124px);
+}
+
+.bg-layer-gradient {
+	position: relative;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+	display: flex;
+	flex: 1;
+	background-image: linear-gradient(180deg, #3d3e48 0%, #4d4b51 1%, #7b7577 2%, transparent 100%);
+}
+
+.hotkey-glow {
+	box-shadow: 0 0 15px 2px rgba(62, 204, 255, 0.6);
+	border: 1px solid var(--color-raider-blue);
+	transition: all 0.2s ease-in-out;
+}
+
+.hotkey-label-fade {
+	transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}

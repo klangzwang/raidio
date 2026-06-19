@@ -1,0 +1,32 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "raidio",
+  "version": "0.5.0",
+  "identifier": "com.valeart.raidio",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "**"
+        ]
+      },
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/IconDesktop.ico",
+      "icons/IconDesktop.png"
+    ]
+  }
+}

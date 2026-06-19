@@ -1,0 +1,32 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "enables the default permissions",
+  "windows": [
+    "raidio",
+    "radial"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "core:webview:allow-create-webview-window",
+    "core:webview:allow-get-all-webviews",
+    "core:window:allow-destroy",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-ignore-cursor-events",
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-applocaldata-read-recursive",
+    "fs:allow-applocaldata-write-recursive",
+    "fs:allow-localdata-read-recursive",
+    "fs:allow-localdata-write-recursive",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-mkdir"
+  ]
+}
