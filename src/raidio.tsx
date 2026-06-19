@@ -405,6 +405,29 @@ export function Raidio() {
     const [isAssigningRadialHotkey, setIsAssigningRadialHotkey] = useState(false);
     const [isGameRunning, setIsGameRunning] = useState(false);
 
+    const [remoteCards, setRemoteCards] = useState<any[]>([]);
+    const [isLoadingCards, setIsLoadingCards] = useState<boolean>(true);
+
+    useEffect(() => {
+        const fetchCards = async () => {
+            try {
+                setIsLoadingCards(true);
+                const response = await fetch('https://raw.githubusercontent.com/klangzwang/VResources/refs/heads/main/cards.json');
+                if (!response.ok) throw new Error('Netzwerk-Antwort war nicht ok');
+                const data = await response.json();
+                setRemoteCards(data);
+            } catch (err) {
+                console.error("[Raidio] Fehler beim Laden der remote Cards:", err);
+            } finally {
+                setTimeout(() => {
+                    setIsLoadingCards(false);
+                }, 2000)
+            }
+        };
+
+        fetchCards();
+    }, []);
+
     useEffect(() => {
         invoke('open_window_process');
         const unlisten = listen<boolean>('process-changed', (event) => {
@@ -850,7 +873,11 @@ export function Raidio() {
 
                                 <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
                                     <div className="flex flex-col w-full h-full pt-4">
-                                        <Cards />
+                                        {isLoadingCards ? (
+                                            <div className="p-4 text-white font-mono text-xs animate-pulse">Loading...</div>
+                                        ) : (
+                                            <Cards items={remoteCards} />
+                                        )}
                                     </div>
                                 </div>
 
