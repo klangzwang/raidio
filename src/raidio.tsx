@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls, useAnimation } from 'framer-motion';
-import { ChevronUp, ChevronDown, X, Play, Square, Check, ChevronLeft, ChevronRight, FolderOpen, Keyboard, WifiOff, RadioOff, MessageCircleWarning, CircleAlert } from 'lucide-react';
+import { ChevronUp, ChevronDown, X, Play, Square, Check, ChevronLeft, ChevronRight, FolderOpen, Keyboard, WifiOff, RadioOff, MessageCircleWarning, CircleAlert, Radio, Grid, Cog, Info } from 'lucide-react';
 import { ConfigManager, GridButtonConfig } from './lib/ConfigManager';
 import { AudioManager } from './lib/AudioManager';
 import { createRoot } from 'react-dom/client';
@@ -373,11 +373,25 @@ function GridCell({ level, index, currentLevel, selectedDeviceId }: { level: num
     );
 }
 
-type Page = 'raidio' | 'board' | 'presets' | 'settings';
-
 export function Raidio() {
 
-    const [activePage, setActivePage] = useState<Page>('raidio');
+    const [activePage, setActivePage] = useState(0);
+    const [direction, setDirection] = useState(0);
+
+    const variants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? '100%' : '-100%',
+            opacity: 0,
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+        },
+        exit: (direction: number) => ({
+            x: direction < 0 ? '100%' : '-100%',
+            opacity: 0,
+        }),
+    };
 
     const [presets, setPresets] = useState<VoicePreset[]>(PresetManager.getPresets());
     const [selectedPresetId, setSelectedPresetId] = useState<string>("");
@@ -808,24 +822,79 @@ export function Raidio() {
         };
     }, [isTestTonePlaying]);
 
-    return (
-        <div className="w-screen h-screen flex items-center justify-center font-sans selection:bg-[#00000000] selection:text-[#090c19ff]">
+    const CurrentScreen = () => {
+        switch (activePage) {
+            case 0:
+                return (
+                    <div className="flex w-full h-full">
+                        <div className="absolute bottom-4 left-4 right-4">
+                            <motion.div
+                                initial={{ opacity: 0, x: 100 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex w-full h-full"
+                            >
+                                <div className="flex flex-row w-full h-full items-center">
 
-            <div className="relative flex flex-col w-full max-w-[400px] h-[720px] bg-[#090c19]/80 rounded-lg select-none overflow-hidden p-4">
+                                    {/* <div className="flex bg-[#7e7e7e] h-full rounded-l-lg border border-r-2 border-[#a1a1a1] overflow-hidden p-2">
+                                            <img src="img/icons/IconRadio.png" />
+                                        </div>
 
-                <AnimatePresence mode="wait">
-                    {activePage === 'raidio' && (
+                                        <div className="flex bg-[#3e3e3e] h-full rounded-r-lg border border-l-2 border-[#a1a1a1] overflow-hidden p-2">
+                                            <h2 className="font-[Arial] text-[#cecece] text-[9pt]">
+                                                ANTENNAE ARRAY 12
+                                            </h2>
+                                            <div className="flex items-center">
+                                                <span className="font-[Arial] text-[#cecece] text-[10pt]">SIGNAL:&nbsp;</span>
+                                                <span
+                                                    className="font-[Arial] text-[10pt]"
+                                                    style={{ color: "#00ff00" }}
+                                                >
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                </span>
+                                                <CircleAlert size={18} className="text-[#ffff00]" />
+                                            </div>
+                                        </div> */}
 
-                        <motion.div
-                            key="raidio"
-                            initial={{ opacity: 0, y: 100 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 100 }}
-                            transition={{ duration: 0.75 }}
-                            className="w-full h-full pt-8"
-                        >
+                                    {/* <div className="flex bg-[#f9eedf] w-full h-full">
+                                            <div className="flex flex-col justify-center overflow-hidden">
+                                                <h2 className="font-[Arial] text-[#cecece] text-[9pt]">
+                                                    ANTENNAE ARRAY 12
+                                                </h2>
+
+                                                <div className="flex items-center">
+                                                    <span className="font-[Arial] text-[#cecece] text-[10pt]">SIGNAL:&nbsp;</span>
+                                                    <span
+                                                        className="font-[Arial] text-[10pt]"
+                                                        style={{ color: "#00ff00" }}
+                                                    >
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                    </span>
+                                                    <CircleAlert size={18} className="text-[#ffff00]" />
+                                                </div>
+
+                                            </div>
+                                        </div> */}
+
+                                </div>
+
+                            </motion.div>
+                        </div>
+                        <div className="flex flex-col w-full h-full gap-4 p-4 pt-12">
+                            {/* <motion.div
+                                key="raidio"
+                                initial={{ opacity: 0, x: -100, scale: 0.5 }}
+                                animate={{ opacity: 1, x: 0, scale: 1.0 }}
+                                exit={{ opacity: 0, x: 100, scale: 0.5 }}
+                                transition={{
+                                    duration: 0.35,
+                                    delay: 0.10,
+                                    ease: "easeInOut"
+                                }}
+                                className="w-full h-full pt-8"
+                            > */}
+
                             <div
-                                className="w-full h-full rounded-lg overflow-hidden border border-[#777777]"
+                                className="flex w-full h-full rounded-lg overflow-hidden border border-[#777777]"
                                 style={{
                                     backgroundImage: 'url("img/bg.png")',
                                     backgroundSize: 'cover',
@@ -873,121 +942,179 @@ export function Raidio() {
 
                                 <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
                                     <div className="flex flex-col w-full h-full pt-4">
-                                        {isLoadingCards ? (
-                                            <div className="p-4 text-white font-mono text-xs animate-pulse">Loading...</div>
-                                        ) : (
-                                            <Cards items={remoteCards} />
-                                        )}
+                                        <Cards items={remoteCards} isLoading={isLoadingCards} />
                                     </div>
                                 </div>
 
                             </div>
-                        </motion.div>
-                    )}
-                    {activePage === 'board' && (
-                        <motion.div
-                            key="board"
-                            initial={{ opacity: 0, y: 100 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 100 }}
-                            transition={{ duration: 0.75 }}
-                            className='w-full h-full'
-                        >
-                            <div className="w-full rounded-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
+                            {/* </motion.div> */}
 
-                                <div className="w-full h-36" />
-
-                                <div className="grid grid-cols-3">
-                                    {Array.from({ length: 9 }).map((_, i) => (
-                                        <GridCell
-                                            key={`${currentLevel}-${i}`}
-                                            level={currentLevel}
-                                            index={i}
-                                            currentLevel={currentLevel}
-                                            selectedDeviceId={selectedDeviceId}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div className="w-full h-20">
-                                </div>
-
-                                <div className="w-full flex rounded-b-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
-                                    <button
-                                        onClick={() => {
-                                            setCurrentLevel(prev => prev > 1 ? prev - 1 : 9),
-                                                OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
-                                        }
-                                        }
-                                        className="w-14 bg-[#F5B925] border-r-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
-                                    >
-                                        <ChevronLeft size={24} strokeWidth={3} className="text-[#1B1D22]" />
-                                    </button>
-                                    <div className="flex-1 flex items-center justify-center py-4 font-black text-[1.1rem] tracking-wide text-[#1B1D22] font-sans">
-                                        SET {currentLevel}
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            setCurrentLevel(prev => prev < 9 ? prev + 1 : 1),
-                                                OWAudioUtils.playSound("snd/ui/click2.mp3", 0.5)
-                                        }
-                                        }
-                                        className="w-14 bg-[#F5B925] border-l-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
-                                    >
-                                        <ChevronRight size={24} strokeWidth={3} className="text-[#1B1D22]" />
-                                    </button>
-                                </div>
-
+                            <div className="flex grow w-full h-24 rounded-lg overflow-hidden">
                             </div>
+                        </div>
+                    </div>
+                );
+            case 1:
+                return (
+                    <div className="flex w-full h-full p-4">
+                        <div className="flex w-full h-full bg-[#090019]/80">
+                        </div>
+                    </div>
+                );
+                {/*
+                // return (
+                    // <motion.div
+                    //     key="board"
+                    //     initial={{ opacity: 0, y: 100 }}
+                    //     animate={{ opacity: 1, y: 0 }}
+                    //     exit={{ opacity: 0, y: 100 }}
+                    //     transition={{ duration: 0.75 }}
+                    //     className='w-full h-full'
+                    // >
+                    //     <div className="w-full rounded-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
 
-                        </motion.div>
-                    )}
-                    {activePage === 'presets' && (
-                        <motion.div
-                            key="presets"
-                            initial={{ opacity: 0, y: 100 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 100 }}
-                            transition={{ duration: 0.75 }}
-                            className='w-full h-full'
-                        >
+                    //         <div className="w-full h-36" />
 
-                            <VoicePresetAccordion
-                                presets={presets}
-                                selectedPresetId={selectedPresetId}
-                                onSelectPreset={handleSelectPreset}
-                                onEnabledPreset={togglePreset}
-                                isPresetEnabled={isPresetActive}
-                            />
-                            <Save />
-                        </motion.div>
-                    )}
-                    {activePage === 'settings' && (
-                        <motion.div
-                            key="settings"
-                            initial={{ opacity: 0, y: 100 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 100 }}
-                            transition={{ duration: 0.25 }}
-                            className='w-full h-full'
-                        >
+                    //         <div className="grid grid-cols-3">
+                    //             {Array.from({ length: 9 }).map((_, i) => (
+                    //                 <GridCell
+                    //                     key={`${currentLevel}-${i}`}
+                    //                     level={currentLevel}
+                    //                     index={i}
+                    //                     currentLevel={currentLevel}
+                    //                     selectedDeviceId={selectedDeviceId}
+                    //                 />
+                    //             ))}
+                    //         </div>
 
-                            <AudioDeviceAccordion
-                                title="AUDIO DEVICES"
-                                devices={devices}
-                                selectedDeviceId={selectedDeviceId}
-                                onSelectDevice={handleSelectDevice}
-                                onPlayTestTone={toggleTestTone}
-                                isTestTonePlaying={isTestTonePlaying}
-                                defaultOpen={false}
-                            />
+                    //         <div className="w-full h-20">
+                    //         </div>
 
-                            <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
-                                <Scanner />
-                            </div>
+                    //         <div className="w-full flex rounded-b-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
+                    //             <button
+                    //                 onClick={() => {
+                    //                     setCurrentLevel(prev => prev > 1 ? prev - 1 : 9),
+                    //                         OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
+                    //                 }
+                    //                 }
+                    //                 className="w-14 bg-[#F5B925] border-r-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
+                    //             >
+                    //                 <ChevronLeft size={24} strokeWidth={3} className="text-[#1B1D22]" />
+                    //             </button>
+                    //             <div className="flex-1 flex items-center justify-center py-4 font-black text-[1.1rem] tracking-wide text-[#1B1D22] font-sans">
+                    //                 SET {currentLevel}
+                    //             </div>
+                    //             <button
+                    //                 onClick={() => {
+                    //                     setCurrentLevel(prev => prev < 9 ? prev + 1 : 1),
+                    //                         OWAudioUtils.playSound("snd/ui/click2.mp3", 0.5)
+                    //                 }
+                    //                 }
+                    //                 className="w-14 bg-[#F5B925] border-l-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
+                    //             >
+                    //                 <ChevronRight size={24} strokeWidth={3} className="text-[#1B1D22]" />
+                    //             </button>
+                    //         </div>
 
-                        </motion.div>
-                    )}
+                    //     </div>
+
+                    // </motion.div>
+                // );*/}
+            case 2:
+                return (
+                    <div className="flex w-full h-full p-4">
+                        <div className="flex w-full h-full bg-[#090019]/80">
+                        </div>
+                    </div>
+                );
+            // <motion.div
+            //     key="presets"
+            //     initial={{ opacity: 0, y: 100 }}
+            //     animate={{ opacity: 1, y: 0 }}
+            //     exit={{ opacity: 0, y: 100 }}
+            //     transition={{ duration: 0.75 }}
+            //     className='w-full h-full'
+            // >
+
+            //     <VoicePresetAccordion
+            //         presets={presets}
+            //         selectedPresetId={selectedPresetId}
+            //         onSelectPreset={handleSelectPreset}
+            //         onEnabledPreset={togglePreset}
+            //         isPresetEnabled={isPresetActive}
+            //     />
+            //     <Save />
+            // </motion.div>
+            case 3:
+                return (
+                    <div className="flex w-full h-full p-4">
+                        <div className="flex w-full h-full bg-[#090019]/80">
+                        </div>
+                    </div>
+                );
+            // <motion.div
+            //     key="settings"
+            //     initial={{ opacity: 0, y: 100 }}
+            //     animate={{ opacity: 1, y: 0 }}
+            //     exit={{ opacity: 0, y: 100 }}
+            //     transition={{ duration: 0.25 }}
+            //     className='w-full h-full'
+            // >
+
+            //     <AudioDeviceAccordion
+            //         title="AUDIO DEVICES"
+            //         devices={devices}
+            //         selectedDeviceId={selectedDeviceId}
+            //         onSelectDevice={handleSelectDevice}
+            //         onPlayTestTone={toggleTestTone}
+            //         isTestTonePlaying={isTestTonePlaying}
+            //         defaultOpen={false}
+            //     />
+
+            //     <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+            //         <Scanner />
+            //     </div>
+
+            // </motion.div>
+            case 4:
+                return (
+                    <div className="flex w-full h-full p-4">
+                        <div className="flex w-full h-full bg-[#090019]/80">
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="w-screen h-screen flex items-center justify-center font-sans selection:bg-[#00000000] selection:text-[#090c19ff]">
+
+            <div className="relative flex flex-col w-full max-w-[400px] h-[720px] bg-[#090c19]/80 rounded-lg select-none overflow-hidden">
+
+                {/* mode="wait" */}
+                <AnimatePresence initial={true} custom={direction}>
+                    <motion.div
+                        key={activePage}
+                        custom={direction}
+                        variants={variants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{
+                            x: {
+                                type: "spring",
+                                stiffness: 200,
+                                damping: 30
+                            },
+                            opacity: {
+                                duration: 0.3
+                            },
+                            ease: "easeInOut"
+                        }}
+                        className="absolute w-full h-full"
+                    >
+                        <CurrentScreen />
+                    </motion.div>
                 </AnimatePresence>
 
                 <AnimatePresence>
@@ -1053,52 +1180,69 @@ export function Raidio() {
                     </h2>
                     <nav className="flex flex-col gap-2 flex-1">
                         <button
-                            disabled={activePage === "raidio"}
+                            disabled={activePage === 0}
                             onClick={() => {
                                 setIsSidebarOpen(false),
-                                    setActivePage("raidio"),
+                                    setDirection(-1),
+                                    setActivePage(0),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === "raidio" ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
+                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 0 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
                             Raidio
                         </button>
                         <button
-                            disabled={activePage === "board"}
+                            disabled={activePage === 1}
                             onClick={() => {
                                 setIsSidebarOpen(false),
-                                    setActivePage("board"),
+                                    activePage === 2 || activePage === 3 ? setDirection(-1) : setDirection(1),
+                                    setActivePage(1),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === "board" ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
+                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 1 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
                             Board
                         </button>
                         <button
-                            disabled={activePage === "presets"}
+                            disabled={activePage === 2}
                             onClick={() => {
                                 setIsSidebarOpen(false),
-                                    setActivePage("presets"),
+                                    activePage === 3 ? setDirection(-1) : setDirection(1),
+                                    setActivePage(2),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === "presets" ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
+                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 2 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
                             Presets
                         </button>
                         <button
-                            disabled={activePage === "settings"}
+                            disabled={activePage === 3}
                             onClick={() => {
                                 setIsSidebarOpen(false),
-                                    setActivePage("settings"),
+                                    activePage === 4 ? setDirection(-1) : setDirection(1),
+                                    setActivePage(3),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === "settings" ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
+                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 3 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
                             Settings
+                        </button>
+                        <button
+                            disabled={activePage === 4}
+                            onClick={() => {
+                                setIsSidebarOpen(false),
+                                    setDirection(1),
+                                    setActivePage(4),
+                                    OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
+                            }
+                            }
+                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 4 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
+                        >
+                            Lobby
                         </button>
                     </nav>
 
@@ -1138,7 +1282,7 @@ export function Raidio() {
 
             <div data-tauri-drag-region className="absolute z-10 top-0 left-0 flex flex-row w-full max-w-[400px] h-8 rounded-t-lg select-none overflow-hidden">
 
-                <div className={`flex bg-[#090c19] w-10 h-full items-center justify-center shrink-0 pointer-events-auto`}>
+                <div className={`flex bg-[#3f92ac] w-10 h-full items-center justify-center shrink-0 pointer-events-auto`}>
                     <motion.img
                         transition={{
                             duration: 1,
@@ -1157,10 +1301,31 @@ export function Raidio() {
                             OWAudioUtils.playSound(isSidebarOpen ? "/snd/ui/beep2.mp3" : "/snd/ui/beep1.mp3", 0.5)
                         }}
                         onDoubleClick={() => OWWinUtils.destroyRaidio("/snd/ui/close.mp3", 1500)}
-                        className={isAudioMuted ? "w-0 h-0" : "w-6 h-6"}
-                        src="img/logo.png"
+                        className="w-6 h-6"
                     />
-                    <RadioOff size={22} className={isAudioMuted ? "w-6 h-6 text-[#ff0000]" : "w-0 h-0"} />
+                    {activePage === 0 &&
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
+                            <Radio size={isAudioMuted ? 0 : 22} />
+                        </motion.div>
+                    }
+                    {activePage === 1 &&
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
+                            <Radio size={isAudioMuted ? 0 : 22} />
+                        </motion.div>
+                    }
+                    {activePage === 2 &&
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
+                            <Radio size={isAudioMuted ? 0 : 22} />
+                        </motion.div>
+                    }
+                    {activePage === 3 &&
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
+                            <Radio size={isAudioMuted ? 0 : 22} />
+                        </motion.div>
+                    }
+                    {isAudioMuted &&
+                        <RadioOff size={22} className={isAudioMuted ? "w-6 h-6 text-[#ff0000]" : "w-0 h-0"} />
+                    }
                 </div>
 
                 <div
@@ -1176,9 +1341,9 @@ export function Raidio() {
                     RAIDIO
                 </div>
 
-                <div className="flex bg-[#f9eedf]/80 h-full items-center justify-center shrink-0 pointer-events-auto">
-                    <ChevronDown size={22} className="text-[#090c19] hover:text-[#8e8e8e]" onClick={() => OWWinUtils.hideWindow(getCurrentWindow(), "snd/ui/debug.mp3")} />
-                    <X size={22} className="text-[#090c19] hover:text-[#8e8e8e]" onClick={() => OWWinUtils.destroyRaidio("snd/ui/close.mp3", 1500)} />
+                <div className="flex bg-[#f9eedf]/80 h-full items-center justify-center shrink-0 pointer-events-auto pr-3 gap-1">
+                    <ChevronDown size={20} className="text-[#090c19] hover:text-[#8e8e8e]" onClick={() => OWWinUtils.hideWindow(getCurrentWindow(), "snd/ui/debug.mp3")} />
+                    <X size={20} className="text-[#090c19] hover:text-[#8e8e8e]" onClick={() => OWWinUtils.destroyRaidio("snd/ui/close.mp3", 1500)} />
                 </div>
 
             </div>

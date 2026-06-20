@@ -128,3 +128,14 @@
 .hotkey-label-fade {
 	transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
+
+.canvas-loader {
+	font-size: 10px;
+	width: 1em;
+	height: 1em;
+	border-radius: 50%;
+	position: relative;
+	text-indent: -9999em;
+	animation: spin 1.1s infinite ease;
+	transform: translateZ(0);
+}
