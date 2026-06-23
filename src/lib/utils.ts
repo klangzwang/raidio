@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Window } from "@tauri-apps/api/window"
 import { invoke } from '@tauri-apps/api/core';
+import Tesseract from 'tesseract.js';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -60,7 +61,7 @@ export class OWWinUtils {
     static destroyRaidio(snd: string = "", delay: number = 0) {
         OWAudioUtils.playSound(snd, 0.5);
         setTimeout(() => {
-            invoke("close_radial_app");
+            invoke("close_raidio_app");
         }, delay);
     }
 
@@ -107,4 +108,65 @@ export class OWAudioUtils {
             audio.playbackRate = OWSysUtils.getRandomInRange((1.0 - InPitch), (1.0 + InPitch));
         audio.play().catch(err => console.log("Audio-Blockade durch Browser:", err));
     };
+}
+
+// ──────────────────────────────────────────────────── Tesseract
+export class OWTessUtils {
+
+    static async getSoundPath(image: string): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            const result = await Tesseract.recognize(
+                image,
+                'eng+deu'
+            );
+            const recognizedText = result.data.text;
+            const lowerRecognizedText = recognizedText.toLowerCase();
+
+            resolve(lowerRecognizedText);
+        })
+    };
+}
+
+// ──────────────────────────────────────────────────── Math
+export class OWMathUtils {
+
+    // /**
+    //  * Mappt eine Zahl von einem Eingangs-Bereich in einen Ziel-Bereich von 0.0 bis 1.0 (Geklammert)
+    //  * @param value Die zu mappende Zahl (z.B. 1233)
+    //  * @param inMin Die untere Grenze des Eingangs-Bereichs
+    //  * @param inMax Die obere Grenze des Eingangs-Bereichs
+    //  */
+    // static mapRangeClamped(value: number, inMin: number, inMax: number): number {
+    //     if (inMin === inMax) return 0.0;
+    //     const normalized = (value - inMin) / (inMax - inMin);
+    //     return Math.max(0.0, Math.min(1.0, normalized));
+    // }
+
+    /**
+     * Mappt eine Zahl von einem Eingangs-Bereich in einen beliebigen Ziel-Bereich (Geklammert)
+     * * @param value Der aktuelle Eingangswert
+     * @param inMin Die untere Grenze des Eingangs-Bereichs
+     * @param inMax Die obere Grenze des Eingangs-Bereichs
+     * @param outMin Die untere Grenze des Ziel-Bereichs
+     * @param outMax Die obere Grenze des Ziel-Bereichs
+     */
+    static mapRangeClamped(
+        value: number,
+        inMin: number,
+        inMax: number,
+        outMin: number,
+        outMax: number
+    ): number {
+        // 1. Sicherheitscheck: Verhindert Division durch Null
+        if (inMin === inMax) return outMin;
+
+        // 2. Normalisieren: Wo steht der Wert im Eingangs-Bereich (Wert zwischen 0.0 und 1.0)
+        const normalized = (value - inMin) / (inMax - inMin);
+
+        // 3. Clamping auf den Eingangs-Bereich (Sicherstellen, dass wir 0.0 - 1.0 nicht verlassen)
+        const clampedNormalized = Math.max(0.0, Math.min(1.0, normalized));
+
+        // 4. Interpolieren: Den Prozentwert in den neuen Ziel-Bereich umrechnen
+        return outMin + clampedNormalized * (outMax - outMin);
+    }
 }

@@ -113,10 +113,10 @@ fn start_window_tracking(window: tauri::WebviewWindow, shared_metrics: SharedWin
         let mut target_hwnd: Option<HWND> = None;
         let mut last_metrics: Option<GameWindowMetrics> = None;
 
-        println!(
-            "[Raidio-Tracker] Starte Suche nach Fenster mit: '{}'",
-            PROCESS_SEARCH_TERM
-        );
+        // println!(
+        //     "[Raidio-Tracker] Starte Suche nach Fenster mit: '{}'",
+        //     PROCESS_SEARCH_TERM
+        // );
 
         loop {
             tokio::time::sleep(tokio::time::Duration::from_millis(16)).await;
@@ -129,12 +129,13 @@ fn start_window_tracking(window: tauri::WebviewWindow, shared_metrics: SharedWin
                         *lock = None;
                     }
                     continue;
-                } else {
-                    println!(
-                        "[Raidio-Tracker] HOOK ERFOLGREICH! Fenster '{}' gefunden.",
-                        PROCESS_SEARCH_TERM
-                    );
                 }
+                // else {
+                //     println!(
+                //         "[Raidio-Tracker] HOOK ERFOLGREICH! Fenster '{}' gefunden.",
+                //         PROCESS_SEARCH_TERM
+                //     );
+                // }
             }
 
             if let Some(hwnd) = target_hwnd {
@@ -146,10 +147,10 @@ fn start_window_tracking(window: tauri::WebviewWindow, shared_metrics: SharedWin
 
                     if last_metrics.as_ref() != Some(&metrics) {
                         if metrics.is_visible && metrics.width > 0 {
-                            println!(
-                                "[Raidio-Tracker] Update Metriken -> x:{}, y:{}, w:{}, h:{}",
-                                metrics.x, metrics.y, metrics.width, metrics.height
-                            );
+                            // println!(
+                            //     "[Raidio-Tracker] Update Metriken -> x:{}, y:{}, w:{}, h:{}",
+                            //     metrics.x, metrics.y, metrics.width, metrics.height
+                            // );
 
                             let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
                                 width: metrics.width as u32,
@@ -165,16 +166,17 @@ fn start_window_tracking(window: tauri::WebviewWindow, shared_metrics: SharedWin
 
                             let _ = window.emit("game-status-changed", metrics.clone());
                         } else {
-                            println!("[Raidio-Tracker] Fenster minimiert oder unsichtbar. Verstecke Overlay.");
+                            // println!("[Raidio-Tracker] Fenster minimiert oder unsichtbar. Verstecke Overlay.");
                             let _ = window.hide();
                         }
+
                         last_metrics = Some(metrics);
                     }
                 } else {
-                    println!(
-                        "[Raidio-Tracker] Fenster '{}' VERLOREN! Warte auf Neustart...",
-                        PROCESS_SEARCH_TERM
-                    );
+                    // println!(
+                    //     "[Raidio-Tracker] Fenster '{}' VERLOREN! Warte auf Neustart...",
+                    //     PROCESS_SEARCH_TERM
+                    // );
                     target_hwnd = None;
                     last_metrics = None;
                     {
@@ -194,18 +196,22 @@ pub fn get_tracked_window_metrics(
     state.lock().unwrap().clone()
 }
 
-// Ersetzt den alten start_up Aufruf
 pub fn init_state(builder: Builder<Wry>) -> Builder<Wry> {
     let shared_metrics: SharedWindowMetrics = Arc::new(Mutex::new(None));
     builder.manage(shared_metrics)
 }
 
-// Wird manuell in process.rs NACH der Fenster-Erstellung aufgerufen
 pub fn start_tracking(app_handle: &tauri::AppHandle) {
+    // if let Some(panel_win) = app_handle.get_webview_window("panel") {
+    //     let shared_metrics = app_handle.state::<SharedWindowMetrics>().inner().clone();
+    //     start_window_tracking(panel_win, shared_metrics);
+    // } else {
+    //     println!("[Raidio-Tracker] FEHLER: Overlay Panel Window konnte beim Tracking-Start nicht gefunden werden!");
+    // }
     if let Some(radial_win) = app_handle.get_webview_window("radial") {
         let shared_metrics = app_handle.state::<SharedWindowMetrics>().inner().clone();
         start_window_tracking(radial_win, shared_metrics);
     } else {
-        println!("[Raidio-Tracker] FEHLER: Radial Window konnte beim Tracking-Start nicht gefunden werden!");
+        println!("[Raidio-Tracker] FEHLER: Overlay Radial Window konnte beim Tracking-Start nicht gefunden werden!");
     }
 }

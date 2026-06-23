@@ -1,1 +1,1 @@
-{"root":["./src/laser.tsx","./src/radial.tsx","./src/raidio.tsx","./src/components/airplane.tsx","./src/components/dynamicsoundmotor.tsx","./src/components/car.tsx","./src/lib/audiomanager.ts","./src/lib/configmanager.ts","./src/lib/presetmanager.ts","./src/lib/utils.ts"],"version":"6.0.3"}
+{"root":["./src/panel.tsx","./src/radial.tsx","./src/raidio.tsx","./src/components/cards.tsx","./src/components/configparser.ts","./src/lib/audiomanager.ts","./src/lib/configmanager.ts","./src/lib/presetmanager.ts","./src/lib/motion.ts","./src/lib/utils.ts"],"version":"6.0.3"}

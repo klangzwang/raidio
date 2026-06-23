@@ -6,6 +6,9 @@ export interface GridButtonConfig {
 
 export class ConfigManager {
     private static readonly RADIAL_MENU_KEY = 'Raidio_RadialMenuKey';
+    private static readonly MUTE_KEY = 'Raidio_MuteKey';
+    private static readonly NEXT_SET_KEY = 'Raidio_NextSetKey';
+    private static readonly PREV_SET_KEY = 'Raidio_PrevSetKey';
     private static readonly AUDIO_DEVICE_KEY = 'Raidio_SelectedAudioDevice';
     private static readonly PRESET_KEY = 'Raidio_SelectedPreset';
     private static readonly LEVEL_KEY = 'Raidio_CurrentLevel';
@@ -19,6 +22,30 @@ export class ConfigManager {
 
     public static loadRadialMenuKey(): string | null {
         return localStorage.getItem(this.RADIAL_MENU_KEY);
+    }
+
+    public static saveMuteKey(hotkey: string): void {
+        localStorage.setItem(this.MUTE_KEY, hotkey);
+    }
+
+    public static loadMuteKey(): string | null {
+        return localStorage.getItem(this.MUTE_KEY);
+    }
+
+    public static saveNextSetKey(hotkey: string): void {
+        localStorage.setItem(this.NEXT_SET_KEY, hotkey);
+    }
+
+    public static loadNextSetKey(): string | null {
+        return localStorage.getItem(this.NEXT_SET_KEY);
+    }
+
+    public static savePrevSetKey(hotkey: string): void {
+        localStorage.setItem(this.PREV_SET_KEY, hotkey);
+    }
+
+    public static loadPrevSetKey(): string | null {
+        return localStorage.getItem(this.PREV_SET_KEY);
     }
 
     public static saveAudioDevice(deviceId: string): void {

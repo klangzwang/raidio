@@ -25,10 +25,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_log::Builder::default().build());
 
-    // 1. Wir initialisieren NUR den State für das Window Tracking
     let metrics_builder = window::init_state(builder);
-
-    // 2. Wir starten den zentralen Process Builder
     let process_builder = process::start_up(metrics_builder);
 
     process_builder

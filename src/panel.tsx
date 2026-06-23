@@ -1,0 +1,166 @@
+import { createRoot } from 'react-dom/client';
+import { useState, useEffect } from 'react';
+import { listen, Event } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Terminal } from 'lucide-react';
+import { ConfigManager } from 'lib/ConfigManager';
+
+import '@css/raidio.css';
+
+interface GameMetrics {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  is_visible: boolean;
+  is_focused: boolean;
+}
+
+export function Panel() {
+
+  const [gameState, setGameState] = useState({ isVisible: false, isFocused: false });
+  const appWindow = getCurrentWindow();
+
+  const isDev = import.meta.env.DEV;
+
+  const [logs, setLogs] = useState<{ id: string; time: string; msg: string; type: 'info' | 'warn' | 'success' }[]>([]);
+
+  const addLog = (msg: string, type: 'info' | 'warn' | 'success' = 'info') => {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLogs(prev => [{ id: Math.random().toString(36).substring(7), time, msg, type }, ...prev].slice(0, 10));
+  };
+
+  useEffect(() => {
+    addLog('Raidio Online. Waiting for IPC events...', 'success');
+  }, []);
+
+  // useEffect(() => {
+  //   addLog('Raidio Online. Waiting for IPC events...', 'success');
+
+  //   const setupListener = async () => {
+  //     const unlisten = await listen<PingData>('new_tactical_ping', (event) => {
+  //       const data = event.payload;
+  //       addLog(`[Tauri IPC] Received "new_tactical_ping" from Rust-Backend!`, 'success');
+  //       addLog(`[Local Payload] Callout: ${data.callout}`, 'success');
+  //     });
+
+  //     return unlisten;
+  //   };
+
+  //   let unlistenPromise = setupListener();
+
+  //   return () => {
+  //     unlistenPromise.then(unlistenFn => {
+  //       if (unlistenFn) unlistenFn();
+  //     });
+  //   };
+  // }, []);
+
+  // useEffect(() => {
+  //   const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
+  //     const metrics = event.payload;
+
+
+  //   });
+
+  //   return () => {
+  //     unlisten.then(f => f());
+  //   };
+  // }, []);
+
+  useEffect(() => {
+    const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
+      const metrics = event.payload;
+
+      setGameState({
+        isVisible: metrics.is_visible,
+        isFocused: metrics.is_focused
+      });
+
+      if (metrics.is_visible && metrics.is_focused) {
+        getCurrentWindow().show();
+      } else {
+        getCurrentWindow().hide();
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
+
+  useEffect(() => {
+    appWindow.setIgnoreCursorEvents(true);
+  });
+
+  if (!gameState.isVisible || !gameState.isFocused)
+    return (
+      <div>
+      </div>
+    );
+
+  if (isDev) {
+    return (
+      <div className="flex flex-col w-screen h-screen">
+
+        <aside className="col-span-4 flex flex-col w-1/4 gap-6 pt-[200px] pl-4">
+
+          <div className="flex-1 flex flex-col min-h-0 bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl overflow-hidden shadow-inner flex-1">
+            <div className="p-3 border-b border-slate-800/60 flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter italic">Raidio Debug Panel</span>
+              <div className="flex items-center gap-2">
+                <Terminal className="text-slate-500 w-3 h-3" />
+              </div>
+            </div>
+
+            <div className="overflow-y-auto p-4 flex flex-col gap-2 flex-1 font-mono text-[11px] leading-relaxed">
+              <AnimatePresence initial={false}>
+                {logs.map((log) => (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex gap-3"
+                  >
+                    <span className="text-slate-600 shrink-0">[{log.time}]</span>
+                    <span className={
+                      log.type === 'warn' ? 'text-amber-400' :
+                        log.type === 'success' ? 'text-emerald-400' :
+                          'text-cyan-400/80'
+                    }>
+                      {log.msg}
+                    </span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    );
+  } else {
+    return (
+      <div className="absolute right-0 top-0">
+        <div
+          className="flex h-7 w-7 bg-[#ffbc13] rounded-full items-center justify-center"
+          style={{
+            fontFamily: "Arial",
+            fontSize: "14pt",
+            fontWeight: "bold",
+            color: "#090c19",
+          }}
+        >
+          {ConfigManager.loadCurrentLevel()}
+        </div>
+      </div>
+    );
+  }
+}
+
+const container = document.getElementById('root')!;
+const root = (container as any)._reactRoot || createRoot(container);
+(container as any)._reactRoot = root;
+root.render(<Panel />);

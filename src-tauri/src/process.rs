@@ -82,26 +82,41 @@ pub fn open_radial_window(app: &tauri::AppHandle) {
         .expect("Failed to build radial window");
 }
 
+pub fn open_panel_window(app: &tauri::AppHandle) {
+    let panel_builder =
+        WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
+            .title("Panel")
+            .visible(false)
+            .skip_taskbar(true)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .focusable(false)
+            .shadow(false);
+
+    panel_builder.build().expect("Failed to build panel window");
+}
+
 pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .invoke_handler(tauri::generate_handler![
             handler::open_window_process,
-            handler::close_radial_app,
+            handler::close_raidio_app,
             window::get_tracked_window_metrics,
+            keys::convert_keyboard_sav,
             keys::convert_sav_to_json,
             keys::get_key_for_action,
-            tesseract::extract_text_from_coordinates,
-            tesseract::extract_text_from_coordinates_extent,
+            tesseract::scan_screen_text,
+            tesseract::extract_text_from_coordinates
         ])
-        .setup(move |app| {
+        .setup(|app| {
             let app_handle = app.handle().clone();
 
-            // 1. Fenster und Tray instanziieren
             open_tray_icon(&app_handle);
             open_raidio_window(&app_handle);
             open_radial_window(&app_handle);
+            // open_panel_window(&app_handle);
 
-            // 2. Jetzt existieren die Fenster! Zeit die Hooks anzufeuern:
             window::start_tracking(&app_handle);
             keys::start_hooks(&app_handle);
 

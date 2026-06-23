@@ -1,22 +1,109 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls, useAnimation } from 'framer-motion';
-import { ChevronUp, ChevronDown, X, Play, Square, Check, ChevronLeft, ChevronRight, FolderOpen, Keyboard, WifiOff, RadioOff, MessageCircleWarning, CircleAlert, Radio, Grid, Cog, Info } from 'lucide-react';
+import { ChevronUp, ChevronDown, X, Play, Square, Check, ChevronLeft, ChevronRight, FolderOpen, Keyboard, WifiOff, RadioOff, MessageCircleWarning, CircleAlert, Radio, Grid, Cog, Info, Users, Tickets } from 'lucide-react';
 import { ConfigManager, GridButtonConfig } from './lib/ConfigManager';
 import { AudioManager } from './lib/AudioManager';
 import { createRoot } from 'react-dom/client';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { OWWinUtils, OWAudioUtils } from './lib/utils';
+import { OWWinUtils, OWAudioUtils, OWTessUtils, OWMathUtils } from './lib/utils';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { PresetManager, VoicePreset } from './lib/PresetManager';
+import { GradientBorder } from 'react-gradient-borders';
 import * as Tone from 'tone';
 
 import './css/raidio.css';
 import { Cards } from './components/Cards';
-import { Save } from './components/save';
-import { Scanner } from './components/Scanner';
-import { fadeIn } from "lib/motion";
+import { SaveFileParser, CategorizedSetting, SettingCategory } from './components/ConfigParser';
+
+const WORD_SOUND_MAP: Record<string, string> = {
+    "wasp": "snd/ping/wasp.mp3",
+    "rocketeer": "snd/ping/rocketeer.mp3",
+    "snitch": "snd/pop/ball_beep01.mp3",
+    "dummy": "snd/pop/ball_explo01.mp3",
+};
+
+const htmlColors: Record<SettingCategory, string> = {
+    [SettingCategory.GRAPHICS]: '#00bcd4',
+    [SettingCategory.VIDEO]: '#e91e63',
+    [SettingCategory.AUDIO]: '#ff9800',
+    [SettingCategory.NETWORK]: '#2196f3',
+    [SettingCategory.GAMEPLAY]: '#4caf50',
+    [SettingCategory.CONTROLS]: '#f44336',
+    [SettingCategory.UI]: '#9e9e9e',
+    [SettingCategory.UNKNOWN]: '#607d8b'
+};
+
+export function SearchResultsReact() {
+
+    const savPath = 'C:\\Users\\Administrator\\AppData\\Local\\PioneerGame\\Saved\\SaveGames\\EmbarkOptionSaveGame.sav';
+
+    const [parser] = useState(new SaveFileParser(savPath));
+    const [results, setResults] = useState<CategorizedSetting[]>([]);
+
+    useEffect(() => {
+        const handleSearch = async () => {
+            try {
+                await parser.loadSaveFile();
+                const catSettings = parser.findSetting("SFXVolume");
+                console.log('Audio-Einstellungen:', catSettings);
+                setResults(catSettings);
+            } catch (error) {
+                console.error('Suchfehler:', error);
+            }
+        };
+        handleSearch();
+    }, [parser]);
+
+    return (
+        <div style={{ padding: '20px' }}>
+
+            <div style={{ marginTop: '20px' }}>
+                {results.length === 0 ? (
+                    <p style={{ color: '#888' }}>Keine Ergebnisse</p>
+                ) : (
+                    results.map((result) => {
+                        const color = htmlColors[result.category] || '#607d8b';
+                        const valueStr = typeof result.value === 'object'
+                            ? JSON.stringify(result.value)
+                            : String(result.value);
+
+                        return (
+                            <div
+                                key={result.key}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    borderLeft: `3px solid ${color}`,
+                                    padding: '12px 15px',
+                                    borderRadius: '4px',
+                                    marginBottom: '10px'
+                                }}
+                            >
+                                <div style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 600 }}>
+                                    {result.key}
+                                </div>
+                                <div style={{ fontSize: '11px', color: color, textTransform: 'uppercase' }}>
+                                    {result.category}
+                                </div>
+                                <pre style={{
+                                    background: 'rgba(0, 0, 0, 0.3)',
+                                    padding: '8px',
+                                    borderRadius: '3px',
+                                    fontSize: '13px',
+                                    color: '#d4d4d4',
+                                    marginTop: '8px'
+                                }}>
+                                    {valueStr}
+                                </pre>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+        </div>
+    );
+}
 
 interface VoicePresetAccordionProps {
     presets: VoicePreset[];
@@ -323,7 +410,8 @@ function GridCell({ level, index, currentLevel, selectedDeviceId }: { level: num
 
     return (
         <div
-            className={`relative group aspect-square flex flex-col items-center justify-center bg-[#f9eedf] hover:bg-[#F5B925] focus-within:bg-[#F5B925] transition-colors
+            className={`relative group aspect-square flex flex-col items-center justify-center
+        ${config.soundData ? "bg-[#f9eedf]" : "bg-[#777777]"} hover:bg-[#F5B925] focus-within:bg-[#F5B925] transition-colors
         ${!isRightCol ? 'border-r-2 border-black' : ''}
         ${!isBottomRow ? 'border-b-2 border-black' : ''}
       `}
@@ -335,11 +423,11 @@ function GridCell({ level, index, currentLevel, selectedDeviceId }: { level: num
             >
                 <span className="font-black text-3xl text-[#1B1D22] font-sans">{index + 1}</span>
                 {config.soundName && (
-                    <span className="text-[10px] text-center w-full px-1 truncate text-[#1B1D22] opacity-80 mt-1">
+                    <span className="text-[12px] text-center w-full px-1 truncate text-[#1B1D22] opacity-80 mt-1">
                         {config.soundName}
                     </span>
                 )}
-                <span className="absolute bottom-1 left-1 text-[9px] font-bold opacity-50 text-[#1B1D22]">
+                <span className={`absolute bottom-1 left-1 text-[12px] font-bold opacity-50 ${config.soundData ? "text-[#030303]" : "text-[#ffffff]/80"}`}>
                     {isAssigningHotkey ? "PRESS KEY..." : config.hotkey}
                 </span>
             </button>
@@ -411,12 +499,16 @@ export function Raidio() {
     const oscillatorRef = useRef<OscillatorNode | null>(null);
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isScrolling, setIsScrolling] = useState(false);
+    // const [isScrolling, setIsScrolling] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [dragAmount, setDragAmount] = useState<number>(0.0);
     const dragControls = useDragControls();
     const controls = useAnimation();
 
     const [isAssigningRadialHotkey, setIsAssigningRadialHotkey] = useState(false);
+    const [isAssigningMuteHotkey, setIsAssigningMuteHotkey] = useState(false);
+    const [isAssigningNextSetHotkey, setIsAssigningNextSetHotkey] = useState(false);
+    const [isAssigningPrevSetHotkey, setIsAssigningPrevSetHotkey] = useState(false);
     const [isGameRunning, setIsGameRunning] = useState(false);
 
     const [remoteCards, setRemoteCards] = useState<any[]>([]);
@@ -451,6 +543,26 @@ export function Raidio() {
             unlisten.then(f => f());
         };
     }, []);
+
+    useEffect(() => {
+        const checkPanelWindow = async () => {
+            try {
+                const existingWindow = await WebviewWindow.getByLabel('panel');
+                isGameRunning ? existingWindow.show() : existingWindow.hide();
+                // if (isGameRunning) {
+                //     OWWinUtils.showWindow(existingWindow, "/snd/ui/open.mp3");
+                //     if (await existingWindow.isMinimized()) {
+                //         await existingWindow.unminimize();
+                //     }
+                //     // existingWindow.setFocus();
+                // }
+                if (await existingWindow.isVisible) {
+                    // OWWinUtils.hideWindow(existingWindow, "/snd/ui/debug.mp3");
+                }
+            } catch (error) { }
+        };
+        checkPanelWindow();
+    }, [isGameRunning]);
 
     useEffect(() => {
         const checkWindowStatus = async () => {
@@ -489,6 +601,9 @@ export function Raidio() {
 
     useEffect(() => {
         const savedRadialMenuKey = ConfigManager.loadRadialMenuKey();
+        const savedMuteKey = ConfigManager.loadMuteKey();
+        const savedNextSetKey = ConfigManager.loadNextSetKey();
+        const savedPrevSetKey = ConfigManager.loadPrevSetKey();
 
         if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
 
@@ -497,6 +612,24 @@ export function Raidio() {
                 e.preventDefault();
                 ConfigManager.saveRadialMenuKey(e.code);
                 setIsAssigningRadialHotkey(false);
+                return;
+            }
+            if (isAssigningMuteHotkey) {
+                e.preventDefault();
+                ConfigManager.saveMuteKey(e.code);
+                setIsAssigningMuteHotkey(false);
+                return;
+            }
+            if (isAssigningNextSetHotkey) {
+                e.preventDefault();
+                ConfigManager.saveNextSetKey(e.code);
+                setIsAssigningNextSetHotkey(false);
+                return;
+            }
+            if (isAssigningPrevSetHotkey) {
+                e.preventDefault();
+                ConfigManager.savePrevSetKey(e.code);
+                setIsAssigningPrevSetHotkey(false);
                 return;
             }
         };
@@ -514,12 +647,42 @@ export function Raidio() {
                         existingWindow.show();
                     }
                 }
+                if (key === savedMuteKey) {
+                    setIsAudioMuted(!isAudioMuted);
+                }
+                if (key === savedNextSetKey) {
+                    () => {
+                        setCurrentLevel(prev => prev > 1 ? prev - 1 : 9),
+                            OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
+                    }
+                }
+                if (key === savedPrevSetKey) {
+                    () => {
+                        setCurrentLevel(prev => prev < 9 ? prev + 1 : 1),
+                            OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
+                    }
+                }
             });
             const uUp = await listen<string>('global-key-release', (event) => {
                 const key = event.payload as string;
                 if (key === savedRadialMenuKey) {
                     if (existingWindow) {
                         existingWindow.hide();
+                    }
+                }
+                if (key === savedMuteKey) {
+                    setIsAudioMuted(!isAudioMuted);
+                }
+                if (key === savedNextSetKey) {
+                    () => {
+                        setCurrentLevel(prev => prev > 1 ? prev - 1 : 9),
+                            OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
+                    }
+                }
+                if (key === savedPrevSetKey) {
+                    () => {
+                        setCurrentLevel(prev => prev < 9 ? prev + 1 : 1),
+                            OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
                     }
                 }
             });
@@ -539,7 +702,7 @@ export function Raidio() {
             unlistenUp?.();
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [isAssigningRadialHotkey]);
+    }, [isAssigningRadialHotkey, isAssigningMuteHotkey, isAssigningNextSetHotkey, isAssigningPrevSetHotkey]);
 
     useEffect(() => {
         let active = true;
@@ -822,6 +985,63 @@ export function Raidio() {
         };
     }, [isTestTonePlaying]);
 
+    useEffect(() => {
+        let active = true;
+        let unlistenDown: (() => void) | undefined;
+        let unlistenUp: (() => void) | undefined;
+
+        (async () => {
+            try {
+                const hotkey = await invoke<string>('get_key_for_action', { actionName: 'SetPing' });
+                if (!active)
+                    return;
+
+                const uDown = await listen<string>('global-key-press', (event) => {
+                    if (event.payload === hotkey) {
+                        // OWAudioUtils.playSound('snd/pop/ball_alert01.mp3', 0.5);
+                    }
+                });
+
+                const uUp = await listen<string>('global-key-release', async (event) => {
+                    if (event.payload === hotkey) {
+                        try {
+                            const imageUrl = await invoke<string>('scan_screen_text');
+                            const recognizedText = await OWTessUtils.getSoundPath(imageUrl);
+                            for (const [word, path] of Object.entries(WORD_SOUND_MAP)) {
+                                if (recognizedText.includes(word.toLowerCase())) {
+                                    OWAudioUtils.playSound(path, 0.5);
+                                    break;
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error scanning screen on ping hotkey release:", err);
+                        }
+                    }
+                });
+
+                if (!active) {
+                    uDown();
+                    uUp();
+                } else {
+                    unlistenDown = uDown;
+                    unlistenUp = uUp;
+                }
+            } catch (err) {
+                console.error("Error setting up ping hotkey listener:", err);
+            }
+        })();
+
+        return () => {
+            active = false;
+            unlistenDown?.();
+            unlistenUp?.();
+        };
+    }, []);
+
+
+
+
+
     const CurrentScreen = () => {
         switch (activePage) {
             case 0:
@@ -940,10 +1160,19 @@ export function Raidio() {
                                     </div>
                                 </div> */}
 
-                                <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
-                                    <div className="flex flex-col w-full h-full pt-4">
+                                {/* <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+                                    <div className="flex flex-col w-full h-auto pt-4">
                                         <Cards items={remoteCards} isLoading={isLoadingCards} />
                                     </div>
+                                </div> */}
+
+                                {/* <div className="flex-1 w-full h-full p-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+                                    <div className="flex flex-col w-full h-full">
+                                        <Cards items={remoteCards} isLoading={isLoadingCards} />
+                                    </div>
+                                </div> */}
+                                <div className="pt-4 pl-4 pr-4 overflow-y-auto no-scrollbar">
+                                    <Cards items={remoteCards} isLoading={isLoadingCards} />
                                 </div>
 
                             </div>
@@ -956,70 +1185,62 @@ export function Raidio() {
                 );
             case 1:
                 return (
-                    <div className="flex w-full h-full p-4">
-                        <div className="flex w-full h-full bg-[#090019]/80">
+                    <div className="flex flex-col w-full h-full p-4 pt-12">
+
+                        <div className="flex w-full bg-white/5 border-white/10 border rounded-lg items-start justify-center p-4">
+
+                            {/* <div className="flex items-center justify-between">
+                                <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="h-4 w-4 text-slate-300"><path d="m15 18-6-6 6-6" className=""></path></svg>
+                                </button>
+                                <div className="text-sm font-medium tracking-tight text-white">November 2025</div>
+                                <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="h-4 w-4 text-slate-300"><path d="m9 18 6-6-6-6" className=""></path></svg>
+                                </button>
+                            </div> */}
+
+                            <div className="grid grid-cols-3 w-full h-full rounded-lg overflow-hidden">
+                                {Array.from({ length: 9 }).map((_, i) => (
+                                    <GridCell
+                                        key={`${currentLevel}-${i}`}
+                                        level={currentLevel}
+                                        index={i}
+                                        currentLevel={currentLevel}
+                                        selectedDeviceId={selectedDeviceId}
+                                    />
+                                ))}
+                            </div>
+
                         </div>
+
+                        <div className="w-full flex rounded-b-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
+                            <button
+                                onClick={() => {
+                                    setCurrentLevel(prev => prev > 1 ? prev - 1 : 9),
+                                        OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
+                                }
+                                }
+                                className="w-14 bg-[#F5B925] border-r-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
+                            >
+                                <ChevronLeft size={24} strokeWidth={3} className="text-[#1B1D22]" />
+                            </button>
+                            <div className="flex-1 flex items-center justify-center py-4 font-black text-[1.1rem] tracking-wide text-[#1B1D22] font-sans">
+                                SET {currentLevel}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setCurrentLevel(prev => prev < 9 ? prev + 1 : 1),
+                                        OWAudioUtils.playSound("snd/ui/click2.mp3", 0.5)
+                                }
+                                }
+                                className="w-14 bg-[#F5B925] border-l-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
+                            >
+                                <ChevronRight size={24} strokeWidth={3} className="text-[#1B1D22]" />
+                            </button>
+                        </div>
+
                     </div>
                 );
-                {/*
-                // return (
-                    // <motion.div
-                    //     key="board"
-                    //     initial={{ opacity: 0, y: 100 }}
-                    //     animate={{ opacity: 1, y: 0 }}
-                    //     exit={{ opacity: 0, y: 100 }}
-                    //     transition={{ duration: 0.75 }}
-                    //     className='w-full h-full'
-                    // >
-                    //     <div className="w-full rounded-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
-
-                    //         <div className="w-full h-36" />
-
-                    //         <div className="grid grid-cols-3">
-                    //             {Array.from({ length: 9 }).map((_, i) => (
-                    //                 <GridCell
-                    //                     key={`${currentLevel}-${i}`}
-                    //                     level={currentLevel}
-                    //                     index={i}
-                    //                     currentLevel={currentLevel}
-                    //                     selectedDeviceId={selectedDeviceId}
-                    //                 />
-                    //             ))}
-                    //         </div>
-
-                    //         <div className="w-full h-20">
-                    //         </div>
-
-                    //         <div className="w-full flex rounded-b-lg overflow-hidden bg-[#f9eedf] border-2 border-black">
-                    //             <button
-                    //                 onClick={() => {
-                    //                     setCurrentLevel(prev => prev > 1 ? prev - 1 : 9),
-                    //                         OWAudioUtils.playSound("snd/ui/click1.mp3", 0.5)
-                    //                 }
-                    //                 }
-                    //                 className="w-14 bg-[#F5B925] border-r-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
-                    //             >
-                    //                 <ChevronLeft size={24} strokeWidth={3} className="text-[#1B1D22]" />
-                    //             </button>
-                    //             <div className="flex-1 flex items-center justify-center py-4 font-black text-[1.1rem] tracking-wide text-[#1B1D22] font-sans">
-                    //                 SET {currentLevel}
-                    //             </div>
-                    //             <button
-                    //                 onClick={() => {
-                    //                     setCurrentLevel(prev => prev < 9 ? prev + 1 : 1),
-                    //                         OWAudioUtils.playSound("snd/ui/click2.mp3", 0.5)
-                    //                 }
-                    //                 }
-                    //                 className="w-14 bg-[#F5B925] border-l-2 border-black flex items-center justify-center shrink-0 hover:bg-[#dca620] focus:outline-none transition-colors"
-                    //             >
-                    //                 <ChevronRight size={24} strokeWidth={3} className="text-[#1B1D22]" />
-                    //             </button>
-                    //         </div>
-
-                    //     </div>
-
-                    // </motion.div>
-                // );*/}
             case 2:
                 return (
                     <div className="flex w-full h-full p-4">
@@ -1047,35 +1268,60 @@ export function Raidio() {
             // </motion.div>
             case 3:
                 return (
-                    <div className="flex w-full h-full p-4">
-                        <div className="flex w-full h-full bg-[#090019]/80">
+                    <div className="flex flex-col w-full h-full p-4 pt-12">
+
+                        <AudioDeviceAccordion
+                            title="AUDIO DEVICES"
+                            devices={devices}
+                            selectedDeviceId={selectedDeviceId}
+                            onSelectDevice={handleSelectDevice}
+                            onPlayTestTone={toggleTestTone}
+                            isTestTonePlaying={isTestTonePlaying}
+                            defaultOpen={false}
+                        />
+
+                        {/* <div className="w-full flex-col rounded-lg overflow-hidden bg-[#F3EBD8] shadow-[0_4px_0_0_rgba(0,0,0,0.5)] mb-4">
+            <div className="w-full flex items-stretch text-left transition-colors"> */}
+
+                        <div className="w-full flex-col rounded-lg overflow-hidden bg-[#F3EBD8] shadow-[0_4px_0_0_rgba(0,0,0,0.5)] mb-4">
+
                         </div>
+
+                        <h2 className="text-[#ece2d0] font-black uppercase tracking-wider mb-6 text-sm flex items-center gap-2">
+                            <ChevronDown className="-rotate-90" size={16} /> Hotkeys
+                        </h2>
+
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsAssigningRadialHotkey(!isAssigningRadialHotkey); }}
+                            className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningRadialHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
+                        >
+                            RadialMenu Hotkey
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsAssigningMuteHotkey(!isAssigningMuteHotkey); }}
+                            className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningMuteHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
+                        >
+                            Mute Hotkey
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsAssigningNextSetHotkey(!isAssigningNextSetHotkey); }}
+                            className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningNextSetHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
+                        >
+                            Next Set Hotkey
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsAssigningPrevSetHotkey(!isAssigningPrevSetHotkey); }}
+                            className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningPrevSetHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
+                        >
+                            Prev Set Hotkey
+                        </button>
+
+                        {/* <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+                            <SearchResultsReact />
+                        </div> */}
+
                     </div>
                 );
-            // <motion.div
-            //     key="settings"
-            //     initial={{ opacity: 0, y: 100 }}
-            //     animate={{ opacity: 1, y: 0 }}
-            //     exit={{ opacity: 0, y: 100 }}
-            //     transition={{ duration: 0.25 }}
-            //     className='w-full h-full'
-            // >
-
-            //     <AudioDeviceAccordion
-            //         title="AUDIO DEVICES"
-            //         devices={devices}
-            //         selectedDeviceId={selectedDeviceId}
-            //         onSelectDevice={handleSelectDevice}
-            //         onPlayTestTone={toggleTestTone}
-            //         isTestTonePlaying={isTestTonePlaying}
-            //         defaultOpen={false}
-            //     />
-
-            //     <div onScroll={() => setIsScrolling(true)} onScrollEnd={() => setIsScrolling(false)} className="flex-1 w-full h-full pl-4 pr-4 overflow-y-auto overflow-x-hidden no-scrollbar">
-            //         <Scanner />
-            //     </div>
-
-            // </motion.div>
             case 4:
                 return (
                     <div className="flex w-full h-full p-4">
@@ -1103,11 +1349,11 @@ export function Raidio() {
                         transition={{
                             x: {
                                 type: "spring",
-                                stiffness: 200,
+                                stiffness: 800,
                                 damping: 30
                             },
                             opacity: {
-                                duration: 0.3
+                                duration: 0.2
                             },
                             ease: "easeInOut"
                         }}
@@ -1118,21 +1364,14 @@ export function Raidio() {
                 </AnimatePresence>
 
                 <AnimatePresence>
-                    {isSidebarOpen ? (
-                        <div
-                            className="absolute top-8 inset-0 bg-[#000000]/60 z-30"
-                            onClick={() => setIsSidebarOpen(false)}
-                        />
-                    ) :
-                        isDragging && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 0.6 }}
-                                exit={{ opacity: 0 }}
-                                className="absolute top-8 inset-0 bg-[#000000] z-30 pointer-events-auto"
-                            />
-                        )
-                    }
+                    <div
+                        className={`absolute top-8 inset-0 ${isSidebarOpen || isDragging ? "w-full h-full" : "w-0 h-0"} `}
+                        onClick={() => { setIsSidebarOpen(false), setDragAmount(0) }}
+                        style={{
+                            backgroundColor: "#000000cc",
+                            opacity: dragAmount
+                        }}
+                    />
                 </AnimatePresence>
 
                 <motion.div
@@ -1142,18 +1381,23 @@ export function Raidio() {
                     dragConstraints={{ left: -240, right: 0 }}
                     dragElastic={0}
                     dragMomentum={false}
+                    onDrag={(e, info) => {
+                        setDragAmount(OWMathUtils.mapRangeClamped(info.offset.x, 0, !isSidebarOpen ? 240 : -240, !isSidebarOpen ? 0.0 : 1.0, !isSidebarOpen ? 1.0 : 0.0));
+                    }}
                     onDragStart={(e, info) => {
                         setIsDragging(true);
                     }}
                     onDragEnd={(e, info) => {
                         setIsDragging(false);
                         if (!isSidebarOpen) {
+                            setDragAmount(info.offset.x > 120 ? 1.0 : 0.0);
                             if (info.offset.x > 120) {
                                 setIsSidebarOpen(true);
                             } else {
                                 controls.start({ x: -240 });
                             }
                         } else {
+                            setDragAmount(info.offset.x < -100 ? 0.0 : 1.0);
                             if (info.offset.x < -100) {
                                 setIsSidebarOpen(false);
                             } else {
@@ -1164,112 +1408,122 @@ export function Raidio() {
                     initial={{ x: isSidebarOpen ? 0 : -240 }}
                     animate={controls}
                     transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-                    className="absolute top-8 bottom-0 left-0 w-[240px] bg-[#111318] border-r border-[#1b1e25] z-40 p-5 shadow-2xl flex flex-col"
+                    className="absolute top-8 bottom-0 left-0 w-[240px] bg-[#090c19] border-r border-[#1b1e25] z-40 p-5 shadow-2xl flex flex-col"
                 >
+                    <div className={`absolute top-0 left-[240px] flex ${isSidebarOpen ? 'w-16' : 'w-0'} h-full bg-[#000000] z-10 [mask-image:linear-gradient(to_right,rgba(0,0,0,1)_0%,rgba(0,0,0,0)_100%)]`} />
                     <div
                         onPointerDown={(e) => dragControls.start(e)}
-                        className={`absolute top-0 bottom-0 ${isSidebarOpen ? 'right-0 w-6' : '-right-6 w-6'
-                            } cursor-ew-resize flex items-center justify-center group touch-none`}
+                        className={`absolute top-0 bottom-0 ${isSidebarOpen ? 'right-0 w-6' : '-right-6 w-6'} cursor-ew-resize flex items-center justify-center group touch-none`}
                     >
-                        <div className={`w-1.5 h-16 ${isSidebarOpen ? 'bg-white/10 rounded-full' : 'bg-white/20 rounded-r-full'
-                            } opacity-0 group-hover:opacity-100 transition-opacity`} />
+                        <motion.div
+                            animate={{
+                                opacity: [1, 0.2, 1]
+                            }}
+                            transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        >
+                            <div className={`w-1.5 h-16 ${isSidebarOpen ? 'bg-white/10 rounded-l-full' : 'bg-white/20 rounded-r-full'} backdrop-blur-sm opacity-100 group-hover:opacity-100 transition-opacity`} />
+                        </motion.div>
                     </div>
 
-                    <h2 className="text-[#ece2d0] font-black uppercase tracking-wider mb-6 text-sm flex items-center gap-2">
-                        <ChevronDown className="-rotate-90" size={16} /> Quick Menu
-                    </h2>
-                    <nav className="flex flex-col gap-2 flex-1">
+                    <nav className="flex flex-col gap-2">
+
                         <button
                             disabled={activePage === 0}
                             onClick={() => {
+                                setDragAmount(0);
                                 setIsSidebarOpen(false),
                                     setDirection(-1),
                                     setActivePage(0),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 0 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
-                            Raidio
+                            <GradientBorder
+                                colors={['#3eccff', '#f1aa1c', '#ff0021', '#3eccff']}
+                                strokeWidth={3}
+                                borderRadius={8}
+                                animationMode="loop"
+                                trigger="hover"
+                            >
+                                <div className={`flex w-[200px] h-10 rounded-lg items-center justify-start pl-2 text-sm font-bold border-2 ${activePage === 0 ? "border-[#d0880a] text-[#090c19] bg-[#F5B925]" : "border-white/30 text-[#ece2d0] bg-white/10"}`}>
+                                    Raidio
+                                </div>
+                            </GradientBorder>
                         </button>
                         <button
                             disabled={activePage === 1}
                             onClick={() => {
+                                setDragAmount(0);
                                 setIsSidebarOpen(false),
-                                    activePage === 2 || activePage === 3 ? setDirection(-1) : setDirection(1),
+                                    setDirection(-1),
                                     setActivePage(1),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 1 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
-                            Board
+                            <GradientBorder
+                                colors={['#3eccff', '#f1aa1c', '#ff0021', '#3eccff']}
+                                strokeWidth={3}
+                                borderRadius={8}
+                                animationMode="loop"
+                                trigger="hover"
+                            >
+                                <div className={`flex w-[200px] h-10 rounded-lg items-center justify-start pl-2 text-sm font-bold border-2 ${activePage === 1 ? "border-[#d0880a] text-[#090c19] bg-[#F5B925]" : "border-white/30 text-[#ece2d0] bg-white/10"}`}>
+                                    Board
+                                </div>
+                            </GradientBorder>
                         </button>
                         <button
                             disabled={activePage === 2}
                             onClick={() => {
+                                setDragAmount(0);
                                 setIsSidebarOpen(false),
-                                    activePage === 3 ? setDirection(-1) : setDirection(1),
+                                    setDirection(-1),
                                     setActivePage(2),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 2 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
-                            Presets
+                            <GradientBorder
+                                colors={['#3eccff', '#f1aa1c', '#ff0021', '#3eccff']}
+                                strokeWidth={3}
+                                borderRadius={8}
+                                animationMode="loop"
+                                trigger="hover"
+                            >
+                                <div className={`flex w-[200px] h-10 rounded-lg items-center justify-start pl-2 text-sm font-bold border-2 ${activePage === 2 ? "border-[#d0880a] text-[#090c19] bg-[#F5B925]" : "border-white/30 text-[#ece2d0] bg-white/10"}`}>
+                                    Presets
+                                </div>
+                            </GradientBorder>
                         </button>
                         <button
                             disabled={activePage === 3}
                             onClick={() => {
+                                setDragAmount(0);
                                 setIsSidebarOpen(false),
-                                    activePage === 4 ? setDirection(-1) : setDirection(1),
+                                    setDirection(-1),
                                     setActivePage(3),
                                     OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
                             }
                             }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 3 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
                         >
-                            Settings
-                        </button>
-                        <button
-                            disabled={activePage === 4}
-                            onClick={() => {
-                                setIsSidebarOpen(false),
-                                    setDirection(1),
-                                    setActivePage(4),
-                                    OWAudioUtils.playSound("snd/ui/click6.mp3", 0.5);
-                            }
-                            }
-                            className={`text-left px-3 py-2 rounded text-sm font-bold ${activePage === 4 ? "text-[#090c19] bg-[#F5B925]" : "text-[#ece2d0] bg-white/10"} transition-colors`}
-                        >
-                            Lobby
+                            <GradientBorder
+                                colors={['#3eccff', '#f1aa1c', '#ff0021', '#3eccff']}
+                                strokeWidth={3}
+                                borderRadius={8}
+                                animationMode="loop"
+                                trigger="hover"
+                            >
+                                <div className={`flex w-[200px] h-10 rounded-lg items-center justify-start pl-2 text-sm font-bold border-2 ${activePage === 3 ? "border-[#d0880a] text-[#090c19] bg-[#F5B925]" : "border-white/30 text-[#ece2d0] bg-white/10"}`}>
+                                    Settings
+                                </div>
+                            </GradientBorder>
                         </button>
                     </nav>
-
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setIsAssigningRadialHotkey(!isAssigningRadialHotkey); }}
-                        className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningRadialHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
-                    >
-                        RadialMenu Hotkey
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setIsAssigningRadialHotkey(!isAssigningRadialHotkey); }}
-                        className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningRadialHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
-                    >
-                        Mute Hotkey
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setIsAssigningRadialHotkey(!isAssigningRadialHotkey); }}
-                        className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningRadialHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
-                    >
-                        Next Set Hotkey
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setIsAssigningRadialHotkey(!isAssigningRadialHotkey); }}
-                        className={`p-1.5 rounded transition-colors shadow-sm focus:outline-none ${isAssigningRadialHotkey ? 'bg-[#F5B925] text-[#1B1D22]' : 'bg-[#1B1D22] text-[#F5B925] hover:bg-[#343841]'}`}
-                    >
-                        Prev Set Hotkey
-                    </button>
 
                     <div className="mt-auto text-xs text-neutral-600 font-mono">
                         v0.5.0
@@ -1283,49 +1537,38 @@ export function Raidio() {
             <div data-tauri-drag-region className="absolute z-10 top-0 left-0 flex flex-row w-full max-w-[400px] h-8 rounded-t-lg select-none overflow-hidden">
 
                 <div className={`flex bg-[#3f92ac] w-10 h-full items-center justify-center shrink-0 pointer-events-auto`}>
-                    <motion.img
+                    <motion.div
+                        animate={{ scale: [1, 1.4, 1] }}
                         transition={{
-                            duration: 1,
-                            repeat: 0,
                             type: "spring",
-                            stiffness: 400,
-                            damping: 17
+                            stiffness: 200,
+                            damping: 30,
+                            duration: 0.2,
                         }}
-                        whileTap={{ scale: 0.90 }}
-                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.80 }}
+                        whileHover={{ scale: 1.25 }}
                         onPointerDown={() => {
                             dragControls.start
                             controls.start({ x: isSidebarOpen ? -240 : 0 })
                             setIsSidebarOpen(!isSidebarOpen)
                             dragControls.stop
                             OWAudioUtils.playSound(isSidebarOpen ? "/snd/ui/beep2.mp3" : "/snd/ui/beep1.mp3", 0.5)
+                            setDragAmount(!isSidebarOpen ? 1.0 : 0.0);
                         }}
                         onDoubleClick={() => OWWinUtils.destroyRaidio("/snd/ui/close.mp3", 1500)}
-                        className="w-6 h-6"
-                    />
-                    {activePage === 0 &&
-                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
-                            <Radio size={isAudioMuted ? 0 : 22} />
-                        </motion.div>
-                    }
-                    {activePage === 1 &&
-                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
-                            <Radio size={isAudioMuted ? 0 : 22} />
-                        </motion.div>
-                    }
-                    {activePage === 2 &&
-                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
-                            <Radio size={isAudioMuted ? 0 : 22} />
-                        </motion.div>
-                    }
-                    {activePage === 3 &&
-                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.25, repeat: 0, delay: 0.2 }}>
-                            <Radio size={isAudioMuted ? 0 : 22} />
-                        </motion.div>
-                    }
+                        className="text-[#000000]"
+                    >
+                        {
+                            activePage === 0 ? <Radio size={isAudioMuted ? 0 : 22} /> :
+                                activePage === 1 ? <Grid size={isAudioMuted ? 0 : 22} /> :
+                                    activePage === 2 ? <Tickets size={isAudioMuted ? 0 : 22} /> :
+                                        <Cog size={isAudioMuted ? 0 : 22} />
+                        }
+                    </motion.div>
                     {isAudioMuted &&
-                        <RadioOff size={22} className={isAudioMuted ? "w-6 h-6 text-[#ff0000]" : "w-0 h-0"} />
+                        <RadioOff size={22} className="w-6 h-6 text-[#ff0000]" />
                     }
+
                 </div>
 
                 <div

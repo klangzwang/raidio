@@ -7,44 +7,9 @@ use tauri::{command, Emitter, Manager};
 use uesave::Save;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
 
-fn get_static_sav_path() -> Result<PathBuf, String> {
-    let local_app_data = std::env::var("LOCALAPPDATA")
-        .map_err(|_| "LOCALAPPDATA-Umgebungsvariable konnte nicht gelesen werden.".to_string())?;
-
-    Ok(PathBuf::from(local_app_data)
-        .join("PioneerGame")
-        .join("Saved")
-        .join("SaveGames")
-        .join("EmbarkSaveGameClientKeyBindings.sav"))
-}
-
-#[command]
-pub fn convert_sav_to_json() -> Result<String, String> {
-    let file_path = get_static_sav_path()?;
-
-    if !file_path.exists() {
-        return Err(format!("Datei nicht gefunden: {:?}", file_path));
-    }
-
-    let mut file = match File::open(&file_path) {
-        Ok(f) => f,
-        Err(e) => return Err(format!("Fehler beim Öffnen: {}", e)),
-    };
-
-    let save = match Save::read(&mut file) {
-        Ok(s) => s,
-        Err(e) => return Err(format!("Fehler beim Parsen: {}", e)),
-    };
-
-    match serde_json::to_string_pretty(&save) {
-        Ok(json) => Ok(json),
-        Err(e) => Err(format!("Fehler bei JSON-Generierung: {}", e)),
-    }
-}
-
 #[command]
 pub fn get_key_for_action(action_name: String) -> Result<String, String> {
-    let file_path = get_static_sav_path()?;
+    let file_path = get_keyboard_sav_path()?;
     if !file_path.exists() {
         return Err("SAV Datei nicht gefunden.".into());
     }
@@ -310,4 +275,46 @@ fn start_keyboard_hook(app_handle: tauri::AppHandle, shared_metrics: SharedWindo
 pub fn start_hooks(app_handle: &tauri::AppHandle) {
     let shared_metrics = app_handle.state::<SharedWindowMetrics>().inner().clone();
     start_keyboard_hook(app_handle.clone(), shared_metrics);
+}
+
+fn get_keyboard_sav_path() -> Result<PathBuf, String> {
+    let local_app_data = std::env::var("LOCALAPPDATA")
+        .map_err(|_| "LOCALAPPDATA-Umgebungsvariable konnte nicht gelesen werden.".to_string())?;
+
+    Ok(PathBuf::from(local_app_data)
+        .join("PioneerGame")
+        .join("Saved")
+        .join("SaveGames")
+        .join("EmbarkSaveGameClientKeyBindings.sav"))
+}
+
+#[command]
+pub fn convert_keyboard_sav() -> Result<String, String> {
+    let file_path = get_keyboard_sav_path()?;
+    if !file_path.exists() {
+        return Err(format!("Datei nicht gefunden: {:?}", file_path));
+    }
+    let mut file = File::open(&file_path).map_err(|e| format!("Fehler beim Öffnen: {}", e))?;
+    let save = Save::read(&mut file).map_err(|e| format!("Fehler beim Parsen: {}", e))?;
+    serde_json::to_string_pretty(&save).map_err(|e| format!("Fehler bei JSON-Generierung: {}", e))
+}
+
+#[command]
+pub fn convert_sav_to_json(file_path: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&file_path);
+
+    if !path.exists() {
+        return Err(format!("Datei nicht gefunden: {}", file_path));
+    }
+
+    if !path.extension().map_or(false, |ext| ext == "sav") {
+        return Err("Nur .sav-Dateien werden unterstützt.".to_string());
+    }
+
+    let mut file = File::open(&path).map_err(|e| format!("Fehler beim Öffnen der Datei: {}", e))?;
+
+    let save = Save::read(&mut file)
+        .map_err(|e| format!("Fehler beim Parsen der SAV-Datei (uesave): {}", e))?;
+
+    serde_json::to_string_pretty(&save).map_err(|e| format!("Fehler bei JSON-Generierung: {}", e))
 }

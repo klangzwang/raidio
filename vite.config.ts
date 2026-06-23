@@ -37,7 +37,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         raidio: resolve(__dirname, 'src/raidio.html'),
-        radial: resolve(__dirname, 'src/radial.html')
+        radial: resolve(__dirname, 'src/radial.html'),
+        panel: resolve(__dirname, 'src/panel.html')
       },
       output: {
         entryFileNames: 'js/[name].js',

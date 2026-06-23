@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 use tauri::{Emitter, WebviewWindow};
 
 #[tauri::command]
-pub fn close_radial_app() {
+pub fn close_raidio_app() {
     std::process::exit(0);
 }
 
