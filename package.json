@@ -28,7 +28,6 @@
     "react-gradient-borders": "^1.0.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "tesseract.js": "^7.0.0",
     "tone": "^15.1.22"
   },
   "devDependencies": {

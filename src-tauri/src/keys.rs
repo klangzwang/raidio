@@ -1,9 +1,8 @@
-use crate::window::SharedWindowMetrics;
 use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
-use tauri::{command, Emitter, Manager};
+use tauri::{command, Emitter};
 use uesave::Save;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
 
@@ -236,23 +235,12 @@ const KEY_MAP: &[(i32, &str)] = &[
     (0xDE, "Quote"),
 ];
 
-fn start_keyboard_hook(app_handle: tauri::AppHandle, shared_metrics: SharedWindowMetrics) {
+fn start_keyboard_hook(app_handle: tauri::AppHandle) {
     thread::spawn(move || {
         let mut pressed_states = vec![false; KEY_MAP.len()];
 
         loop {
-            let is_window_open = {
-                let lock = shared_metrics.lock().unwrap();
-                lock.as_ref().map_or(false, |m| m.is_visible)
-            };
-
-            let sleep_dur = if is_window_open {
-                Duration::from_millis(50)
-            } else {
-                Duration::from_millis(250)
-            };
-
-            thread::sleep(sleep_dur);
+            thread::sleep(Duration::from_millis(250));
 
             unsafe {
                 for (idx, &(vk, key_name)) in KEY_MAP.iter().enumerate() {
@@ -273,8 +261,7 @@ fn start_keyboard_hook(app_handle: tauri::AppHandle, shared_metrics: SharedWindo
 }
 
 pub fn start_hooks(app_handle: &tauri::AppHandle) {
-    let shared_metrics = app_handle.state::<SharedWindowMetrics>().inner().clone();
-    start_keyboard_hook(app_handle.clone(), shared_metrics);
+    start_keyboard_hook(app_handle.clone());
 }
 
 fn get_keyboard_sav_path() -> Result<PathBuf, String> {

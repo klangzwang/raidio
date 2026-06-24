@@ -1,6 +1,4 @@
-use crate::handler;
 use crate::keys;
-use crate::tesseract;
 use crate::window;
 
 use tauri::menu::{Menu, MenuItem};
@@ -82,32 +80,34 @@ pub fn open_radial_window(app: &tauri::AppHandle) {
         .expect("Failed to build radial window");
 }
 
-pub fn open_panel_window(app: &tauri::AppHandle) {
-    let panel_builder =
-        WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
-            .title("Panel")
-            .visible(false)
-            .skip_taskbar(true)
-            .decorations(false)
-            .transparent(true)
-            .always_on_top(true)
-            .focusable(false)
-            .shadow(false);
+// pub fn open_panel_window(app: &tauri::AppHandle) {
+//     let panel_builder =
+//         WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
+//             .title("Panel")
+//             .visible(false)
+//             .skip_taskbar(true)
+//             .decorations(false)
+//             .transparent(true)
+//             .always_on_top(true)
+//             .focusable(false)
+//             .shadow(false);
 
-    panel_builder.build().expect("Failed to build panel window");
+//     panel_builder.build().expect("Failed to build panel window");
+// }
+
+#[tauri::command]
+pub fn close_raidio_app() {
+    std::process::exit(0);
 }
 
 pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .invoke_handler(tauri::generate_handler![
-            handler::open_window_process,
-            handler::close_raidio_app,
-            window::get_tracked_window_metrics,
+            close_raidio_app,
             keys::convert_keyboard_sav,
             keys::convert_sav_to_json,
             keys::get_key_for_action,
-            tesseract::scan_screen_text,
-            tesseract::extract_text_from_coordinates
+            window::get_tracked_window_metrics
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -117,7 +117,8 @@ pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
             open_radial_window(&app_handle);
             // open_panel_window(&app_handle);
 
-            window::start_tracking(&app_handle);
+            let tracked_windows = ["radial"];
+            window::start_tracking(&app_handle, &tracked_windows);
             keys::start_hooks(&app_handle);
 
             Ok(())

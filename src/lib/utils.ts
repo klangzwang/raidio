@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Window } from "@tauri-apps/api/window"
 import { invoke } from '@tauri-apps/api/core';
-import Tesseract from 'tesseract.js';
+// import Tesseract from 'tesseract.js';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -111,21 +111,21 @@ export class OWAudioUtils {
 }
 
 // ──────────────────────────────────────────────────── Tesseract
-export class OWTessUtils {
+// export class OWTessUtils {
 
-    static async getSoundPath(image: string): Promise<string> {
-        return new Promise(async (resolve, reject) => {
-            const result = await Tesseract.recognize(
-                image,
-                'eng+deu'
-            );
-            const recognizedText = result.data.text;
-            const lowerRecognizedText = recognizedText.toLowerCase();
+//     static async getSoundPath(image: string): Promise<string> {
+//         return new Promise(async (resolve, reject) => {
+//             const result = await Tesseract.recognize(
+//                 image,
+//                 'eng+deu'
+//             );
+//             const recognizedText = result.data.text;
+//             const lowerRecognizedText = recognizedText.toLowerCase();
 
-            resolve(lowerRecognizedText);
-        })
-    };
-}
+//             resolve(lowerRecognizedText);
+//         })
+//     };
+// }
 
 // ──────────────────────────────────────────────────── Math
 export class OWMathUtils {

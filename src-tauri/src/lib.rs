@@ -1,7 +1,5 @@
-mod handler;
 mod keys;
 mod process;
-mod tesseract;
 mod window;
 
 use tauri::{Emitter, Manager};

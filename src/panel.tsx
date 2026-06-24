@@ -19,7 +19,6 @@ interface GameMetrics {
 
 export function Panel() {
 
-  const [gameState, setGameState] = useState({ isVisible: false, isFocused: false });
   const appWindow = getCurrentWindow();
 
   const isDev = import.meta.env.DEV;
@@ -35,58 +34,28 @@ export function Panel() {
     addLog('Raidio Online. Waiting for IPC events...', 'success');
   }, []);
 
-  // useEffect(() => {
-  //   addLog('Raidio Online. Waiting for IPC events...', 'success');
-
-  //   const setupListener = async () => {
-  //     const unlisten = await listen<PingData>('new_tactical_ping', (event) => {
-  //       const data = event.payload;
-  //       addLog(`[Tauri IPC] Received "new_tactical_ping" from Rust-Backend!`, 'success');
-  //       addLog(`[Local Payload] Callout: ${data.callout}`, 'success');
-  //     });
-
-  //     return unlisten;
-  //   };
-
-  //   let unlistenPromise = setupListener();
-
-  //   return () => {
-  //     unlistenPromise.then(unlistenFn => {
-  //       if (unlistenFn) unlistenFn();
-  //     });
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
-  //     const metrics = event.payload;
-
-
-  //   });
-
-  //   return () => {
-  //     unlisten.then(f => f());
-  //   };
-  // }, []);
-
   useEffect(() => {
     const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
       const metrics = event.payload;
-
-      setGameState({
-        isVisible: metrics.is_visible,
-        isFocused: metrics.is_focused
-      });
-
-      if (metrics.is_visible && metrics.is_focused) {
-        getCurrentWindow().show();
+      if (metrics.is_focused) {
+        appWindow.show();
       } else {
-        getCurrentWindow().hide();
+        appWindow.hide();
       }
+    });
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
+
+  useEffect(() => {
+
+    const unlistenClosed = listen('window-closed', (event) => {
+      appWindow.hide();
     });
 
     return () => {
-      unlisten.then(f => f());
+      unlistenClosed.then(f => f());
     };
   }, []);
 
@@ -94,13 +63,7 @@ export function Panel() {
     appWindow.setIgnoreCursorEvents(true);
   });
 
-  if (!gameState.isVisible || !gameState.isFocused)
-    return (
-      <div>
-      </div>
-    );
-
-  if (isDev) {
+  if (!isDev) {
     return (
       <div className="flex flex-col w-screen h-screen">
 
@@ -143,7 +106,7 @@ export function Panel() {
     );
   } else {
     return (
-      <div className="absolute right-0 top-0">
+      <div className="absolute right-3 top-10">
         <div
           className="flex h-7 w-7 bg-[#ffbc13] rounded-full items-center justify-center"
           style={{
