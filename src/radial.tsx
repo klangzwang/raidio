@@ -1,12 +1,13 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { listen, Event } from '@tauri-apps/api/event';
+import { listen } from '@tauri-apps/api/event';
 import { ConfigManager } from './lib/ConfigManager';
 import { AudioManager } from './lib/AudioManager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import '@css/raidio.css';
+import { AudioLines } from 'lucide-react';
 
 interface GameMetrics {
   x: number;
@@ -56,30 +57,14 @@ export function Radial() {
   const menuSize = (outerRadius + 50) * 2;
   const centerPos = menuSize / 2;
 
-  const [gameState, setGameState] = useState({ isVisible: true, isFocused: true });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const appWindow = getCurrentWindow();
-
-  useEffect(() => {
-    const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
-      const metrics = event.payload;
-
-      setGameState({
-        isVisible: metrics.is_visible,
-        isFocused: metrics.is_focused
-      });
-    });
-
-    return () => {
-      unlisten.then(f => f());
-    };
-  }, []);
 
   useEffect(() => {
     appWindow.setIgnoreCursorEvents(!isMenuOpen);
   }, [isMenuOpen]);
 
-  // Cleanup Event beim Unmounten der kompletten Komponente
   useEffect(() => {
     return () => {
       if (activeObjectUrlRef.current) {
@@ -215,11 +200,11 @@ export function Radial() {
     audio.play().catch(error => console.error("Audio konnte nicht abgespielt werden:", error));
   };
 
-  if (!gameState.isVisible || !isMenuOpen)
+  if (!isMenuOpen) {
     return (
-      <div>
-      </div>
+      <></>
     );
+  }
 
   return (
     <div className="flex w-screen h-screen bg-transparent items-center justify-center overflow-hidden selection:bg-transparent">
@@ -307,13 +292,37 @@ export function Radial() {
                     {/* UI Platzhalter */}
                   </div>
                   <div className="grow w-full h-full">
-                    {activeItem.label}
+                    {/* {activeItem.label} */}
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {/* <div className="absolute -right-24 flex items-center justify-end pointer-events-none font-[Arial] text-[#cecece] text-[14pt]">
+          <AudioLines size={22} /> Slot Information:
+        </div> */}
+
+        {/* <div className="absolute right-0 flex items-center justify-end pointer-events-none">
+          <AnimatePresence mode="popLayout">
+            {activeItem && (
+              <motion.div
+                key="label"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="text-white text-base font-medium tracking-widest uppercase text-center px-6 drop-shadow-md"
+                style={{ maxWidth: centerRingRadius * 1.5 }}
+              >
+                <div className="absolute right-0">
+                  {activeItem.label}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div> */}
+
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls, useAnimation } from 'framer-motion';
-import { ChevronUp, ChevronDown, X, Play, Square, Check, ChevronLeft, ChevronRight, FolderOpen, Keyboard, WifiOff, RadioOff, MessageCircleWarning, CircleAlert, Radio, Grid, Cog, Info, Users, Tickets } from 'lucide-react';
+import { ChevronUp, ChevronDown, X, Play, Square, Check, ChevronLeft, ChevronRight, FolderOpen, Keyboard, RadioOff, Radio, Grid, Cog, Tickets } from 'lucide-react';
 import { ConfigManager, GridButtonConfig } from './lib/ConfigManager';
 import { AudioManager } from './lib/AudioManager';
 import { createRoot } from 'react-dom/client';
@@ -508,8 +508,6 @@ export function Raidio() {
     const [isAssigningMuteHotkey, setIsAssigningMuteHotkey] = useState(false);
     const [isAssigningNextSetHotkey, setIsAssigningNextSetHotkey] = useState(false);
     const [isAssigningPrevSetHotkey, setIsAssigningPrevSetHotkey] = useState(false);
-    const [gameState, setGameState] = useState('disconnected');
-    const gameStateRef = useRef("disconnected");
 
     const [remoteCards, setRemoteCards] = useState<any[]>([]);
     const [isLoadingCards, setIsLoadingCards] = useState<boolean>(true);
@@ -533,132 +531,6 @@ export function Raidio() {
 
         fetchCards();
     }, []);
-
-    useEffect(() => {
-
-        const unlistenGame = listen('game-status-changed', (event) => {
-            setGameState('running');
-            // console.log("Spiel erkannt, State: running");
-        });
-
-        const unlistenClosed = listen('window-closed', (event) => {
-            setGameState('disconnected');
-            // console.log("Spiel geschlossen, State: disconnected");
-        });
-
-        return () => {
-            unlistenGame.then(f => f());
-            unlistenClosed.then(f => f());
-        };
-    }, []);
-
-    useEffect(() => {
-        gameStateRef.current = gameState;
-    }, [gameState]);
-
-
-
-
-
-    useEffect(() => {
-        const checkPanelWindow = async () => {
-            try {
-                const existingWindow = await WebviewWindow.getByLabel('panel');
-                console.log(existingWindow);
-                // isGameRunning ? existingWindow.show() : existingWindow.hide();
-                // if (isGameRunning) {
-                //     OWWinUtils.showWindow(existingWindow, "/snd/ui/open.mp3");
-                //     if (await existingWindow.isMinimized()) {
-                //         await existingWindow.unminimize();
-                //     }
-                //     // existingWindow.setFocus();
-                // }
-                if (await existingWindow.isVisible) {
-                    // OWWinUtils.hideWindow(existingWindow, "/snd/ui/debug.mp3");
-                }
-            } catch (error) { }
-        };
-        checkPanelWindow();
-    }, []);
-
-
-
-
-
-
-
-    // useEffect(() => {
-    //     invoke('open_window_process');
-    //     const unlisten = listen<boolean>('process-changed', (event) => {
-    //         setIsGameRunning(event.payload);
-    //     });
-    //     return () => {
-    //         unlisten.then(f => f());
-    //     };
-    // }, []);
-
-    // useEffect(() => {
-
-    //     listen('window-closed', (event) => {
-    //         setGameState({
-    //             isRunning: false,
-    //             isVisible: false,
-    //             isFocused: false
-    //         });
-    //     });
-
-    //     const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
-    //         const metrics = event.payload;
-    //         setGameState({
-    //             isRunning: metrics.running,
-    //             isVisible: metrics.is_visible,
-    //             isFocused: metrics.is_focused
-    //         });
-    //     });
-
-    //     return () => {
-    //         unlisten.then(f => f());
-    //     };
-    // }, [gameState]);
-
-    // useEffect(() => {
-    // const checkPanelWindow = async () => {
-    // try {
-    // const existingWindow = await WebviewWindow.getByLabel('panel');
-    // isGameRunning ? existingWindow.show() : existingWindow.hide();
-    // // if (isGameRunning) {
-    // //     OWWinUtils.showWindow(existingWindow, "/snd/ui/open.mp3");
-    // //     if (await existingWindow.isMinimized()) {
-    // //         await existingWindow.unminimize();
-    // //     }
-    // //     // existingWindow.setFocus();
-    // // }
-    // if (await existingWindow.isVisible) {
-    // // OWWinUtils.hideWindow(existingWindow, "/snd/ui/debug.mp3");
-    // }
-    // } catch (error) { }
-    // };
-    // checkPanelWindow();
-    // }, [isGameRunning]);
-
-    // useEffect(() => {
-    // const checkWindowStatus = async () => {
-    // try {
-    // const isVisible = await getCurrentWindow().isVisible();
-    // if (!isGameRunning && !isVisible) {
-    // OWWinUtils.showWindow(getCurrentWindow(), "/snd/ui/open.mp3");
-    // if (await getCurrentWindow().isMinimized()) {
-    // await getCurrentWindow().unminimize();
-    // }
-    // getCurrentWindow().setFocus();
-    // }
-    // if (isGameRunning && isVisible) {
-    // // OWWinUtils.hideWindow(getCurrentWindow(), "/snd/ui/debug.mp3");
-    // }
-    // } catch (error) { }
-    // };
-    // checkWindowStatus();
-    // }, [isGameRunning]);
 
     useEffect(() => {
         controls.start({ x: isSidebarOpen ? 0 : -240 });
@@ -719,11 +591,11 @@ export function Raidio() {
             const existingWindow = await WebviewWindow.getByLabel('radial');
             const uDown = await listen<string>('global-key-press', (event) => {
                 const key = event.payload as string;
-                if (key === savedRadialMenuKey) {
-                    if (existingWindow && gameStateRef.current === 'running') {
-                        existingWindow.show();
-                    }
-                }
+                // if (key === savedRadialMenuKey) {
+                //     if (existingWindow) {
+                //         existingWindow.show();
+                //     }
+                // }
                 if (key === savedMuteKey) {
                     setIsAudioMuted(!isAudioMuted);
                 }
@@ -742,11 +614,11 @@ export function Raidio() {
             });
             const uUp = await listen<string>('global-key-release', (event) => {
                 const key = event.payload as string;
-                if (key === savedRadialMenuKey) {
-                    if (existingWindow) {
-                        existingWindow.hide();
-                    }
-                }
+                // if (key === savedRadialMenuKey) {
+                //     if (existingWindow) {
+                //         existingWindow.hide();
+                //     }
+                // }
                 if (key === savedMuteKey) {
                     setIsAudioMuted(!isAudioMuted);
                 }
@@ -1061,63 +933,6 @@ export function Raidio() {
             window.removeEventListener('keydown', handleKeyInteraction);
         };
     }, [isTestTonePlaying]);
-
-    // useEffect(() => {
-    //     let active = true;
-    //     let unlistenDown: (() => void) | undefined;
-    //     let unlistenUp: (() => void) | undefined;
-
-    //     (async () => {
-    //         try {
-    //             const hotkey = await invoke<string>('get_key_for_action', { actionName: 'SetPing' });
-    //             if (!active)
-    //                 return;
-
-    //             const uDown = await listen<string>('global-key-press', (event) => {
-    //                 if (event.payload === hotkey) {
-    //                     // OWAudioUtils.playSound('snd/pop/ball_alert01.mp3', 0.5);
-    //                 }
-    //             });
-
-    //             const uUp = await listen<string>('global-key-release', async (event) => {
-    //                 if (event.payload === hotkey) {
-    //                     try {
-    //                         const imageUrl = await invoke<string>('scan_screen_text');
-    //                         const recognizedText = await OWTessUtils.getSoundPath(imageUrl);
-    //                         for (const [word, path] of Object.entries(WORD_SOUND_MAP)) {
-    //                             if (recognizedText.includes(word.toLowerCase())) {
-    //                                 OWAudioUtils.playSound(path, 0.5);
-    //                                 break;
-    //                             }
-    //                         }
-    //                     } catch (err) {
-    //                         console.error("Error scanning screen on ping hotkey release:", err);
-    //                     }
-    //                 }
-    //             });
-
-    //             if (!active) {
-    //                 uDown();
-    //                 uUp();
-    //             } else {
-    //                 unlistenDown = uDown;
-    //                 unlistenUp = uUp;
-    //             }
-    //         } catch (err) {
-    //             console.error("Error setting up ping hotkey listener:", err);
-    //         }
-    //     })();
-
-    //     return () => {
-    //         active = false;
-    //         unlistenDown?.();
-    //         unlistenUp?.();
-    //     };
-    // }, []);
-
-
-
-
 
     const CurrentScreen = () => {
         switch (activePage) {

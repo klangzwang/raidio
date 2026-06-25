@@ -1,3 +1,4 @@
+use crate::handler;
 use crate::keys;
 use crate::window;
 
@@ -80,30 +81,26 @@ pub fn open_radial_window(app: &tauri::AppHandle) {
         .expect("Failed to build radial window");
 }
 
-// pub fn open_panel_window(app: &tauri::AppHandle) {
-//     let panel_builder =
-//         WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
-//             .title("Panel")
-//             .visible(false)
-//             .skip_taskbar(true)
-//             .decorations(false)
-//             .transparent(true)
-//             .always_on_top(true)
-//             .focusable(false)
-//             .shadow(false);
+pub fn open_panel_window(app: &tauri::AppHandle) {
+    let panel_builder =
+        WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
+            .title("Panel")
+            .visible(false)
+            .skip_taskbar(true)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .focusable(false)
+            .shadow(false);
 
-//     panel_builder.build().expect("Failed to build panel window");
-// }
-
-#[tauri::command]
-pub fn close_raidio_app() {
-    std::process::exit(0);
+    panel_builder.build().expect("Failed to build panel window");
 }
 
 pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .invoke_handler(tauri::generate_handler![
-            close_raidio_app,
+            handler::close_raidio_app,
+            handler::install_voicemeeter,
             keys::convert_keyboard_sav,
             keys::convert_sav_to_json,
             keys::get_key_for_action,
@@ -115,9 +112,9 @@ pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
             open_tray_icon(&app_handle);
             open_raidio_window(&app_handle);
             open_radial_window(&app_handle);
-            // open_panel_window(&app_handle);
+            open_panel_window(&app_handle);
 
-            let tracked_windows = ["radial"];
+            let tracked_windows = ["radial", "panel"];
             window::start_tracking(&app_handle, &tracked_windows);
             keys::start_hooks(&app_handle);
 

@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect } from 'react';
-import { listen, Event } from '@tauri-apps/api/event';
+import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Terminal } from 'lucide-react';
@@ -8,18 +8,7 @@ import { ConfigManager } from 'lib/ConfigManager';
 
 import '@css/raidio.css';
 
-interface GameMetrics {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  is_visible: boolean;
-  is_focused: boolean;
-}
-
 export function Panel() {
-
-  const appWindow = getCurrentWindow();
 
   const isDev = import.meta.env.DEV;
 
@@ -34,24 +23,24 @@ export function Panel() {
     addLog('Raidio Online. Waiting for IPC events...', 'success');
   }, []);
 
-  useEffect(() => {
-    const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
-      const metrics = event.payload;
-      if (metrics.is_focused) {
-        appWindow.show();
-      } else {
-        appWindow.hide();
-      }
-    });
-    return () => {
-      unlisten.then(f => f());
-    };
-  }, []);
+  // useEffect(() => {
+  //   const unlisten = listen<GameMetrics>('game-status-changed', (event: Event<GameMetrics>) => {
+  //     const metrics = event.payload;
+  //     if (metrics.is_focused) {
+  //       appWindow.show();
+  //     } else {
+  //       appWindow.hide();
+  //     }
+  //   });
+  //   return () => {
+  //     unlisten.then(f => f());
+  //   };
+  // }, []);
 
   useEffect(() => {
 
     const unlistenClosed = listen('window-closed', (event) => {
-      appWindow.hide();
+      getCurrentWindow().hide();
     });
 
     return () => {
@@ -60,16 +49,16 @@ export function Panel() {
   }, []);
 
   useEffect(() => {
-    appWindow.setIgnoreCursorEvents(true);
+    getCurrentWindow().setIgnoreCursorEvents(true);
   });
 
-  if (!isDev) {
+  if (isDev) {
     return (
       <div className="flex flex-col w-screen h-screen">
 
-        <aside className="col-span-4 flex flex-col w-1/4 gap-6 pt-[200px] pl-4">
+        <aside className="col-span-4 flex flex-col w-1/3 gap-6 pt-[500px] pl-4">
 
-          <div className="flex-1 flex flex-col min-h-0 bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl overflow-hidden shadow-inner flex-1">
+          <div className="flex-1 flex flex-col min-h-0 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl overflow-hidden shadow-inner flex-1">
             <div className="p-3 border-b border-slate-800/60 flex items-center justify-between">
               <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter italic">Raidio Debug Panel</span>
               <div className="flex items-center gap-2">
@@ -106,7 +95,7 @@ export function Panel() {
     );
   } else {
     return (
-      <div className="absolute right-3 top-10">
+      <div className="absolute right-1 top-2">
         <div
           className="flex h-7 w-7 bg-[#ffbc13] rounded-full items-center justify-center"
           style={{

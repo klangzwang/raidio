@@ -1,3 +1,4 @@
+mod handler;
 mod keys;
 mod process;
 mod window;

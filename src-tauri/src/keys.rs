@@ -4,7 +4,7 @@ use std::thread;
 use std::time::Duration;
 use tauri::{command, Emitter};
 use uesave::Save;
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
 
 #[command]
 pub fn get_key_for_action(action_name: String) -> Result<String, String> {

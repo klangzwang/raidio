@@ -27,10 +27,10 @@ tauri-plugin-fs = "2.0.0-rc"
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-single-instance = "2.0.0"
 tauri-plugin-shell = "2.0.0"
-windows-sys = { version = "0.52", features = [
+windows = { version = "0.58", features = [
     "Win32_Foundation",
-    "Win32_Graphics_Gdi",
     "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
     "Win32_UI_Input_KeyboardAndMouse"
 ] }
 tokio = { version = "1.1", features = ["full"] }
@@ -38,6 +38,9 @@ uesave = "0.3.0"
 scrap = "0.5"
 base64 = "0.22"
 image = "0.24.9"
+
+# DownloadVoicemeeter
+reqwest = { version = "0.11", features = ["blocking"] }
 
 [profile.dev]
 debug = 1 # 2 = volle Details, 1 = nur Line-Tables (reicht meist), 0 = gar keine
