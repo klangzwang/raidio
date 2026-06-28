@@ -5,10 +5,10 @@ use tauri::{Builder, Emitter, Manager, Wry};
 use windows::Win32::Foundation::{BOOL, HWND, LPARAM, RECT};
 use windows::Win32::UI::WindowsAndMessaging::{
     AdjustWindowRectEx, EnumWindows, GetForegroundWindow, GetSystemMetrics, GetWindow,
-    GetWindowLongPtrW, GetWindowPlacement, GetWindowRect, GetWindowTextW, IsIconic,
-    IsWindowVisible, GWL_EXSTYLE, GWL_STYLE, GW_OWNER, SM_CXSCREEN, SM_CYSCREEN, SW_SHOWMAXIMIZED,
-    WINDOWPLACEMENT, WINDOW_EX_STYLE, WINDOW_STYLE, WS_CAPTION, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
-    WS_THICKFRAME,
+    GetWindowLongPtrW, GetWindowPlacement, GetWindowRect, GetWindowTextW, IsHungAppWindow,
+    IsIconic, IsWindow, IsWindowVisible, GWL_EXSTYLE, GWL_STYLE, GW_OWNER, SM_CXSCREEN,
+    SM_CYSCREEN, SW_SHOWMAXIMIZED, WINDOWPLACEMENT, WINDOW_EX_STYLE, WINDOW_STYLE, WS_CAPTION,
+    WS_EX_APPWINDOW, WS_EX_TOOLWINDOW, WS_THICKFRAME,
 };
 
 /// Wrapper um HWND, damit er über thread-Grenzen (Send) transportiert werden kann.
@@ -33,15 +33,22 @@ pub struct GameWindowMetrics {
     pub is_visible: bool,
     pub is_focused: bool,
     pub is_minimized: bool,
+    pub is_rendering: bool,
 }
 
 pub type SharedWindowMetrics = Arc<Mutex<Option<GameWindowMetrics>>>;
 
 fn get_window_metrics(hwnd: HWND) -> Option<GameWindowMetrics> {
     unsafe {
+        // Fenster existiert nicht mehr → frühzeitig None zurückgeben
+        if !IsWindow(hwnd).as_bool() {
+            return None;
+        }
+
         let mut rect = RECT::default();
-        let _ = GetWindowRect(hwnd, &mut rect)
-            .map_err(|e| format!("GetWindowRect fehlgeschlagen: {}", e));
+        if GetWindowRect(hwnd, &mut rect).is_err() {
+            return None;
+        }
 
         // Fensterstile abfragen, um die exakten Rahmenbedingungen zu bestimmen
         let style = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
@@ -97,6 +104,9 @@ fn get_window_metrics(hwnd: HWND) -> Option<GameWindowMetrics> {
         let is_borderless_fullscreen = is_borderless && covers_screen;
         let is_fullscreen = is_maximized || covers_screen;
 
+        let is_hung = IsHungAppWindow(hwnd).as_bool();
+        let is_rendering = is_visible && width > 100 && height > 100 && !is_hung;
+
         return Some(GameWindowMetrics {
             is_fullscreen,
             is_borderless_fullscreen,
@@ -107,6 +117,7 @@ fn get_window_metrics(hwnd: HWND) -> Option<GameWindowMetrics> {
             is_visible,
             is_focused,
             is_minimized,
+            is_rendering,
         });
     }
 }
@@ -117,97 +128,12 @@ unsafe fn primary_screen_size() -> (u32, u32) {
     (w, h)
 }
 
-// fn get_window_metrics(game_hwnd: HWND) -> Option<GameWindowMetrics> {
-//     unsafe {
-//         // 1. Check: Existiert das Fenster überhaupt noch?
-//         // Wenn nicht, geben wir None zurück, damit der Tracker den Reset ausführt!
-//         if !IsWindow(game_hwnd).as_bool() {
-//             return None;
-//         }
-
-//         // 2. Check: Ist das Fenster unsichtbar? (Existiert, aber versteckt)
-//         if !IsWindowVisible(game_hwnd).as_bool() {
-//             return Some(GameWindowMetrics {
-//                 x: 0,
-//                 y: 0,
-//                 width: 0,
-//                 height: 0,
-//                 is_visible: false,
-//                 is_focused: false,
-//                 is_minimized: false,
-//             });
-//         }
-
-//         // 3. Check: Ist das Fenster minimiert?
-//         if IsIconic(game_hwnd).as_bool() {
-//             return Some(GameWindowMetrics {
-//                 x: 0,
-//                 y: 0,
-//                 width: 0,
-//                 height: 0,
-//                 is_visible: false,
-//                 is_focused: false,
-//                 is_minimized: true,
-//             });
-//         }
-
-//         // 4. Metriken abrufen, wenn das Fenster sichtbar und nicht minimiert ist
-//         let mut client_rect: RECT = std::mem::zeroed();
-
-//         // Holt uns den reinen Inhaltsbereich
-//         if GetClientRect(game_hwnd, &mut client_rect).is_ok() {
-//             let width = client_rect.right - client_rect.left;
-//             let height = client_rect.bottom - client_rect.top;
-
-//             // Lokalen Nullpunkt definieren
-//             let mut top_left = POINT { x: 0, y: 0 };
-
-//             // Jetzt mit dem korrekten Import in globale Monitor-Koordinaten umrechnen
-//             if ClientToScreen(game_hwnd, &mut top_left).as_bool() {
-//                 let is_focused = GetForegroundWindow() == game_hwnd;
-
-//                 return Some(GameWindowMetrics {
-//                     x: top_left.x,
-//                     y: top_left.y,
-//                     width,
-//                     height,
-//                     is_visible: true,
-//                     is_focused,
-//                     is_minimized: false,
-//                 });
-//             }
-//         }
-
-//         None
-
-//         // let mut rect: RECT = std::mem::zeroed();
-//         // if GetWindowRect(game_hwnd, &mut rect).as_bool() {
-//         //     let width = rect.right - rect.left;
-//         //     let height = rect.bottom - rect.top;
-
-//         //     let is_focused = GetForegroundWindow() == game_hwnd;
-
-//         //     Some(GameWindowMetrics {
-//         //         running: true,
-//         //         x: rect.left,
-//         //         y: rect.top,
-//         //         width,
-//         //         height,
-//         //         is_visible: true,
-//         //         is_focused,
-//         //         is_minimized: false,
-//         //     })
-//         // } else {
-//         //     None
-//         // }
-//     }
-// }
-
 fn start_window_tracking(windows: Vec<tauri::WebviewWindow>, shared_metrics: SharedWindowMetrics) {
     tauri::async_runtime::spawn(async move {
         // HWND ist nicht Send (roher Pointer), daher als usize speichern
         let mut target_hwnd: Option<SendableHwnd> = None;
         let mut last_metrics: Option<GameWindowMetrics> = None;
+        let mut rendering_event_fired = false;
 
         loop {
             tokio::time::sleep(tokio::time::Duration::from_millis(160)).await;
@@ -227,14 +153,48 @@ fn start_window_tracking(windows: Vec<tauri::WebviewWindow>, shared_metrics: Sha
 
             if let Some(ref hwnd_wrapper) = target_hwnd {
                 let hwnd = hwnd_wrapper.hwnd();
+
+                // Explizite Prüfung: Fenster noch gültig?
+                let still_alive = unsafe { IsWindow(hwnd).as_bool() };
+                if !still_alive {
+                    println!(
+                        "[Raidio-Tracker] HWND ungültig (Fenster geschlossen). Suche wird neu gestartet..."
+                    );
+                    target_hwnd = None;
+                    last_metrics = None;
+                    rendering_event_fired = false;
+                    {
+                        let mut lock = shared_metrics.lock().unwrap();
+                        *lock = None;
+                    }
+                    for window in &windows {
+                        let _ = window.emit("window-opened", false);
+                        let _ = window.emit("window-closed", ());
+                        let _ = window.hide();
+                    }
+                    continue;
+                }
+
                 if let Some(metrics) = get_window_metrics(hwnd) {
                     {
                         let mut lock = shared_metrics.lock().unwrap();
                         *lock = Some(metrics.clone());
                     }
 
+                    if metrics.is_rendering && !rendering_event_fired {
+                        rendering_event_fired = true;
+                        println!("[Raidio-Tracker] MATCH! Spiel rendert vollständig. Schieße Event 'game-rendering-started'.");
+                        for window in &windows {
+                            let _ = window.emit("game-rendering-started", &metrics);
+                        }
+                    }
+
                     if last_metrics.as_ref() != Some(&metrics) {
                         if metrics.width > 0 {
+                            for window in &windows {
+                                let _ = window.emit("window-opened", true);
+                            }
+
                             println!(
                                 "[Raidio-Tracker] Info -> x:{}, y:{}, w:{}, h:{}, is_focused:{}, is_minimized:{}, is_visible:{}",
                                 metrics.x, metrics.y, metrics.width, metrics.height, metrics.is_focused, metrics.is_minimized, metrics.is_visible
@@ -283,13 +243,14 @@ fn start_window_tracking(windows: Vec<tauri::WebviewWindow>, shared_metrics: Sha
                     );
                     target_hwnd = None; // SendableHwnd wird gedroppt
                     last_metrics = None;
-
+                    rendering_event_fired = false;
                     {
                         let mut lock = shared_metrics.lock().unwrap();
                         *lock = None;
                     }
 
                     for window in &windows {
+                        let _ = window.emit("window-opened", false);
                         let _ = window.emit("window-closed", ());
                         let _ = window.hide();
                     }

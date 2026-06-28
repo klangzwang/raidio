@@ -4,14 +4,24 @@ from pathlib import Path
 def combine_project_files(source_dir, output_filename="Combined_Codebase.txt"):
     """
     Sammelt alle relevanten Code-Dateien in einem Verzeichnis rekursiv ein, 
-    ignoriert definierte Blacklist-Ordner und speichert das Ergebnis auf dem Desktop.
+    ignoriert definierte Blacklist-Ordner sowie Blacklist-Dateien und speichert das Ergebnis auf dem Desktop.
     """
     valid_extensions = {".py", ".cpp", ".h", ".ts", ".tsx", ".js", ".json", ".bat", ".rs", ".toml"}
     
-    blacklist = [
+    # Ordner, die komplett ignoriert werden
+    folder_blacklist = [
+        "dist",
         "node_modules",
         "src-tauri/target",
+        "src-tauri/gen",
         ".git"
+    ]
+    
+    # Spezifische Dateinamen, die ignoriert werden sollen
+    file_blacklist = [
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
     ]
     
     source_path = Path(source_dir)
@@ -36,9 +46,15 @@ def combine_project_files(source_dir, output_filename="Combined_Codebase.txt"):
 
                 rel_path = file_path.relative_to(source_path).as_posix()
                 
-                if any(bad_path in rel_path for bad_path in blacklist):
+                # 1. Ordner-Blacklist prüfen
+                if any(bad_path in rel_path for bad_path in folder_blacklist):
                     continue
 
+                # 2. Datei-Blacklist prüfen
+                if file_path.name in file_blacklist:
+                    continue
+
+                # 3. Gültige Dateiendung prüfen
                 if file_path.suffix in valid_extensions:
                     print(f"Kopiere Text von: {rel_path}")
                     

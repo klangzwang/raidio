@@ -26,7 +26,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@css": path.resolve(__dirname, "./src/css"),
       "lib": path.resolve(__dirname, "./src/lib"),
-      "components": path.resolve(__dirname, "./src/components")
+      "components": path.resolve(__dirname, "./src/components"),
+      "widgets": path.resolve(__dirname, "./src/widgets"),
+      "listener": path.resolve(__dirname, "./src/listener")
     },
   },
   base: './',

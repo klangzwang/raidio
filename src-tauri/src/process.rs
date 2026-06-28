@@ -85,6 +85,8 @@ pub fn open_panel_window(app: &tauri::AppHandle) {
     let panel_builder =
         WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("panel.html".into()))
             .title("Panel")
+            .inner_size(64.0, 64.0)
+            .resizable(false)
             .visible(false)
             .skip_taskbar(true)
             .decorations(false)
@@ -95,6 +97,16 @@ pub fn open_panel_window(app: &tauri::AppHandle) {
 
     panel_builder.build().expect("Failed to build panel window");
 }
+
+// use std::process::Command;
+
+// pub fn launch_voicemeeter() -> Result<String, String> {
+//     let path = r"C:\Program Files (x86)\VB\Voicemeeter\voicemeeter_x64.exe";
+//     match Command::new(path).spawn() {
+//         Ok(_) => Ok("Voicemeeter erfolgreich gestartet!".to_string()),
+//         Err(e) => Err(format!("Fehler beim Starten von Voicemeeter: {}", e)),
+//     }
+// }
 
 pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
     builder
@@ -117,6 +129,10 @@ pub fn start_up(builder: Builder<Wry>) -> Builder<Wry> {
             let tracked_windows = ["radial", "panel"];
             window::start_tracking(&app_handle, &tracked_windows);
             keys::start_hooks(&app_handle);
+
+            // if let Err(e) = launch_voicemeeter() {
+            //     eprintln!("Voicemeeter Auto-Start fehlgeschlagen: {}", e);
+            // }
 
             Ok(())
         })

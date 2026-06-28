@@ -22,6 +22,8 @@ pub fn run() {
                 let _ = window.set_focus();
             }
         }))
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_log::Builder::default().build());
 
     let metrics_builder = window::init_state(builder);

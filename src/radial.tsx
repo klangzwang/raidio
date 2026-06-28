@@ -7,16 +7,6 @@ import { AudioManager } from './lib/AudioManager';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import '@css/raidio.css';
-import { AudioLines } from 'lucide-react';
-
-interface GameMetrics {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  is_visible: boolean;
-  is_focused: boolean;
-}
 
 // --- Math & SVG Path Utilities ---
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {

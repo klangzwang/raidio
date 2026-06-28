@@ -70,29 +70,4 @@ export class AudioManager {
     private get isPlaying() {
         return this.audio !== null && !this.audio.ended;
     }
-
-    // public getAudioContext() {
-    //     return this.audioContext;
-    // }
-    // public setAudioContext(audioContext: AudioContext) {
-    //     this.audioContext = audioContext;
-    // }
-    // public getOscillator() {
-    //     return this.currentOscillator;
-    // }
-    // public setOscillator(oscillator: OscillatorNode) {
-    //     this.currentOscillator = oscillator;
-    // }
-
-    // public stopTestTone(): void {
-    //     if (this.currentOscillator) {
-    //         this.currentOscillator.stop();
-    //         this.currentOscillator.disconnect();
-    //     }
-    //     if (this.audioContext) {
-    //         this.audioContext.close();
-    //     }
-    //     this.audioContext = null;
-    //     this.currentOscillator = null;
-    // }
 }

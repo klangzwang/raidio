@@ -240,7 +240,7 @@ fn start_keyboard_hook(app_handle: tauri::AppHandle) {
         let mut pressed_states = vec![false; KEY_MAP.len()];
 
         loop {
-            thread::sleep(Duration::from_millis(250));
+            thread::sleep(Duration::from_millis(25));
 
             unsafe {
                 for (idx, &(vk, key_name)) in KEY_MAP.iter().enumerate() {
